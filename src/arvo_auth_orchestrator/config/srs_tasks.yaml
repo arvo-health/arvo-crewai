@@ -1,0 +1,116 @@
+ingest_product_overview_task:
+  description: >
+    Project: {project_name}. Phase: {phase_name}. Year: {current_year}.
+    Step 1 — Ingest the raw product overview (human input below). Apply the Context
+    Synthesizer pipeline: Analyze, Extract, Structure using the mandatory XML-like sections.
+    Strip fluff. Preserve every explicit constraint. Output is the ONLY source for step 2.
+
+    Product overview:
+    ---
+    {product_overview}
+    ---
+  expected_output: >
+    Dense markdown saved as step_01_ingest_memory.md containing exactly:
+    `<System_Overview>`, `<Actors>`, `<Core_Requirements>`, `<Technical_Constraints>`,
+    `<Relational_Logic>`, `<Gaps_And_Conflicts>` populated from this overview only.
+  agent: preparation_lead
+
+materialize_overview_task:
+  description: >
+    Step 2 — Incremental memory: call read_workflow_artifact("step_01_ingest_memory.md")
+    first. Reconcile with the original overview embedded in prior task context. Produce
+    overview.md: canonical product scope memory for later steps. Same dense tag structure;
+    add metadata header (project, phase, date). Resolve contradictions inside
+    `<Gaps_And_Conflicts>` if still open, or carry them forward explicitly.
+  expected_output: >
+    Markdown for outputs/srs_workflow/overview.md; must incorporate all non-conflicting
+    facts from step_01; same section tag pattern where applicable.
+  agent: preparation_lead
+
+research_product_details_task:
+  description: >
+    Step 3 — Call read_workflow_artifact("overview.md") before writing. Deepen product
+    facts using read_second_brain_file for every relevant second-brain path and
+    fetch_notion_page_text for each UUID (from NOTION_PAGE_IDS or overview text).
+    Merge new evidence into the structured tag layout. If NOTION_API_KEY is missing,
+    document under `<Gaps_And_Conflicts>`.
+  expected_output: >
+    Dense markdown for product_research_notes.md: merged `<Core_Requirements>` and
+    related sections, `<Sources_Traceability>` table (path or page id -> claim),
+    expanded `<Gaps_And_Conflicts>`.
+  agent: preparation_lead
+
+materialize_product_task:
+  description: >
+    Step 4 — Call read_workflow_artifact("product_research_notes.md") then
+    read_workflow_artifact("overview.md"). Emit product.md: single product memory for
+    the SRS author. Deduplicate; keep `<Sources_Traceability>`; no new claims without
+    source from prior files or tools.
+  expected_output: >
+    Dense markdown product.md with tag sections plus explicit traceability to
+    second-brain / Notion sources.
+  agent: preparation_lead
+
+analyze_codebases_task:
+  description: >
+    Step 5 — Call read_workflow_artifact("product.md") first. Inspect repositories with
+    read_repo_file (backend, frontend, infra). Map existing capabilities vs product.md
+    requirements using `<Relational_Logic>` and relational arrows. Per repo: patterns,
+    entrypoints, tests, coupling risks. Keep backend vs frontend decoupled in prose.
+  expected_output: >
+    Dense markdown repo_analysis.md with tag sections tailored to code reality,
+    `<Sources_Traceability>` listing repo file paths read, and `<Gaps_And_Conflicts>`
+    for code-vs-product mismatches.
+  agent: preparation_lead
+
+snapshot_backend_task:
+  description: >
+    Step 6a — Call read_workflow_artifact("repo_analysis.md") then read_workflow_artifact("product.md").
+    Write backend.md: stack, modules, APIs, auth, tests, extension points — only facts
+    from read_repo_file on backend repo. Dense tags; `<Gaps_And_Conflicts>` if scope
+    cannot be mapped to code.
+  expected_output: >
+    Dense markdown backend.md snapshot for downstream SRS.
+  agent: preparation_lead
+
+snapshot_frontend_task:
+  description: >
+    Step 6b — Call read_workflow_artifact("repo_analysis.md") and
+    read_workflow_artifact("backend.md"). Write frontend.md snapshot from read_repo_file
+    on frontend only; align with product.md claims where applicable.
+  expected_output: >
+    Dense markdown frontend.md snapshot.
+  agent: preparation_lead
+
+snapshot_infra_task:
+  description: >
+    Step 6c — Call read_workflow_artifact("repo_analysis.md"),
+    read_workflow_artifact("backend.md"), read_workflow_artifact("frontend.md"). Write
+    infra.md from read_repo_file (repo=infra and backend when infra lives there).
+  expected_output: >
+    Dense markdown infra.md snapshot.
+  agent: preparation_lead
+
+author_srs_task:
+  description: >
+    Step 7 — Author SRS.md for phase {phase_name} of project {project_name}. Year: {current_year}.
+
+    You MUST call read_workflow_artifact once per file before finalizing output, for
+    exactly these seven filenames: overview.md, product_research_notes.md, product.md,
+    repo_analysis.md, backend.md, frontend.md, infra.md. Do not rely on prior task
+    summaries alone; the contract requires full source text from disk.
+
+    Supplementary organizational rules (optional; do not contradict the identity loaded
+    in your backstory):
+    ---
+    {srs_authoring_rules}
+    ---
+
+    Output path: outputs/srs_workflow/SRS.md. Trace every RF/RNF to paths or sections
+    stated in those seven files.
+  expected_output: >
+    Complete SRS.md: IEEE 830-structured body, imperative mood only, RF-* and RNF-*
+    taxonomy grouped by module/feature, MVP vs Post-MVP split for RFs, ATAM trade-offs
+    (>=2), risk section, V&V self-critique per IEEE 1012 mindset, and traceability matrix
+    to the seven source files.
+  agent: srs_author

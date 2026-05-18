@@ -1,0 +1,41 @@
+discovery_task:
+  description: >
+    Initiative: {initiative}. Brief: {brief}. Year: {current_year}.
+    Use the read_second_brain_file tool when paths are suggested in the brief or
+    when you need grounding from plans/, integracoes/, or conceitos/ under the
+    second-brain root. Summarize what already exists versus what is new work.
+  expected_output: >
+    Markdown with sections: Context from KB, Scope in, Scope out, Dependencies,
+    Open questions (max 8 bullets), Recommended validation focus.
+  agent: planning_lead
+
+implementation_brief_task:
+  description: >
+    Using the discovery output as the single source of truth, propose an implementation
+    outline for {initiative}. Respect strict decoupling between arvo-auth (Go backend),
+    arvo-auth-frontend (Next.js), and second-brain (plans and history only). No direct
+    architectural coupling between frontend and backend.
+  expected_output: >
+    Markdown with sections: Workstreams by repo, Sequencing, Interfaces and contracts,
+    Files or packages likely touched (high level), Rollout notes.
+  agent: implementation_lead
+
+quality_gate_task:
+  description: >
+    From discovery and implementation brief for {initiative}, define quality gates:
+    automated tests, manual checks, swagger or API contracts if relevant, and data
+    migration or feature flag risks.
+  expected_output: >
+    Markdown checklist grouped by repo (backend / frontend / docs), each item
+    testable or verifiable, plus explicit non-goals for this release.
+  agent: quality_analyst
+
+maintenance_readiness_task:
+  description: >
+    For {initiative}, describe maintenance after merge: how to detect bugs in production,
+    what dashboards or logs matter, how to file follow-ups (e.g. Linear), and how
+    future agents should use second-brain plans versus Notion documentation.
+  expected_output: >
+    Markdown with sections: Monitoring and alerts, Rollback, Bug triage playbook,
+    Knowledge updates (second-brain vs Notion), Post-release review triggers.
+  agent: maintenance_engineer

@@ -1,0 +1,53 @@
+analyze_srs_notion_structure_task:
+  description: >
+    Project: {project_name}. Phase: {phase_name}. Year: {current_year}.
+
+    Step A — Call read_srs_for_notion_publish. Extract the SRS **table of contents** (explicit TOC
+    block or, if missing, infer from top-level `#` / `##` headings in order). Parse requirement
+    taxonomies (RF/RNF/REQ), cross-references, URLs in citations, trade-offs, risks, and
+    traceability tables. Design a concrete Notion tree: **one child page per TOC section** under
+    the Dashboard (which sits under the workspace root from NOTION_SRS_PARENT_PAGE_ID or
+    NOTION_SRS_PARENT_URL), preserving section numbers in page titles, parent relationships, and
+    one-paragraph intent per page. Do not invoke Notion tools yet — only plan for the next step
+    which runs Claude Code with MCP.
+
+    Mention the root only as "workspace root" in prose; do not echo API secrets (none
+    are required for MCP publish).
+  expected_output: >
+    Markdown publish plan with: (1) ordered list of pages from root → Dashboard → **one page per
+    TOC section** (titles must preserve SRS section numbering), (2) which SRS sections / anchors
+    map to each page, (3) list of citations where URLs will become Notion links, (4) explicit
+    **lossless** intent: each page must receive the **full** markdown slice for its section(s)
+    (no summaries), (5) self-critique on traceability and any TOC ambiguities for the publish step.
+  agent: notion_architect
+
+execute_notion_publish_task:
+  description: >
+    Step B — Execute the plan using the tool notion_publish_srs_via_claude exactly ONCE.
+    You may pass publish_plan_markdown as empty string: the tool reads
+    outputs/notion_export/publish_plan.md from disk (written by step A). Alternatively
+    paste the full plan body into publish_plan_markdown. The tool reads the SRS file
+    from disk and delegates to the local Claude Code CLI with your Notion MCP to create
+    all pages under NOTION_SRS_PARENT_PAGE_ID or NOTION_SRS_PARENT_URL. Do not use REST
+    API tools. The subprocess instructions require **lossless** copy: every SRS paragraph,
+    list, table, and code fence for each section must appear in full on the matching Notion
+    page (no summarization). If the tool returns an error, summarize it in the execution log.
+  expected_output: >
+    Markdown execution log: paste the tool output (PUBLISH_OK / URLs / page titles),
+    plus a checklist mapping SRS TOC sections to Notion URLs and an explicit note that
+    full section bodies were copied (not summarized).
+  agent: notion_architect
+
+verify_notion_publish_completeness_task:
+  description: >
+    Step C — After step B completes, call notion_verify_srs_publish_completeness_via_claude
+    exactly ONCE. The tool re-reads SRS.md, publish_plan.md, and publish_execution_log.md from
+    disk and runs Claude Code + Notion MCP to compare every SRS block (headings, tables, lists,
+    code fences, requirement lines) against the live Notion pages; it must patch Notion for any
+    missing material. Do not use REST API tools. If the tool returns COMPLETE_FAILED, summarize
+    blockers and what remains manual. Optional env: NOTION_PUBLISH_VERIFY_CLAUDE_TIMEOUT_SEC
+    (default 3600 seconds for this subprocess).
+  expected_output: >
+    Markdown report: paste the tool output (COMPLETE_OK / COMPLETE_GAPS_FIXED / COMPLETE_FAILED),
+    then a short human-readable summary of coverage confidence and any residual risks.
+  agent: notion_architect

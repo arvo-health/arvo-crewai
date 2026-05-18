@@ -1,0 +1,36 @@
+[project]
+name = "arvo_auth_orchestrator"
+version = "0.1.0"
+description = "arvo-auth-orchestrator using crewAI"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "crewai[tools,anthropic]==1.14.4"
+]
+
+[project.scripts]
+arvo_auth_orchestrator = "arvo_auth_orchestrator.main:run"
+run_crew = "arvo_auth_orchestrator.main:run"
+train = "arvo_auth_orchestrator.main:train"
+replay = "arvo_auth_orchestrator.main:replay"
+test = "arvo_auth_orchestrator.main:test"
+run_with_trigger = "arvo_auth_orchestrator.main:run_with_trigger"
+run_srs = "arvo_auth_orchestrator.main:run_srs"
+run_srs_replay = "arvo_auth_orchestrator.main:run_srs_replay"
+run_notion_publish = "arvo_auth_orchestrator.main:run_notion_publish"
+run_notion_gap_comments = "arvo_auth_orchestrator.main:run_notion_gap_comments"
+run_srs_meeting_update = "arvo_auth_orchestrator.main:run_srs_meeting_update"
+run_srs_meeting_update_apply = "arvo_auth_orchestrator.main:run_srs_meeting_update_apply"
+run_srs_notion_diff_apply = "arvo_auth_orchestrator.main:run_srs_notion_diff_apply"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Chroma / embedding stack may pull onnxruntime without a macOS wheel for very new
+# platform tags; pin until upstream publishes darwin wheels.
+[tool.uv]
+override-dependencies = ["onnxruntime==1.20.1"]
+
+[tool.crewai]
+type = "crew"

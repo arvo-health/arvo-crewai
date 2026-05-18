@@ -1,0 +1,105 @@
+extract_meeting_decisions_task:
+  description: >
+    Project: {project_name}. Phase: {phase_name}. Year: {current_year}.
+
+    Step 1 — **Sources allowed for this task:** only `read_meeting_transcript` (path from
+    `ARVO_MEETING_TRANSCRIPT_FILE` or `{transcript_path}` when injected by the runner). Do **not**
+    call any tool that reads `SRS.md`, `outputs/notion_export/*`, `outputs/srs_workflow/*`, or
+    any other on-disk artefact from other crews.
+
+    Read the full transcript. Identify every **concrete** decision that would change published
+    requirements documentation. For each decision, assign a stable id `D-001`, `D-002`, … in
+    transcript order and classify `change_type` as one of `add`, `modify`, `remove`, `rename`.
+
+    Tie each decision to **targets evidenced only in the transcript**: section numbers, headings,
+    or requirement-style ids (`RF-`, `RNF-`, `REQ-`) **only when those strings appear verbatim**
+    in the transcript (or the speaker clearly dictates them in the same passage). If the
+    transcript names a topic without a stable id, use a short `target_hint` in plain language —
+    do not import identifiers from external files.
+
+    Quote a short transcript excerpt (≤ 2 sentences) as evidence per row.
+
+    Detect conflicts (multiple decisions touching the same transcript-stated target) and list
+    them under `## Conflitos detectados`. Decisions that cannot be tied to any explicit anchor
+    in the transcript must go under `## Decisões inconclusivas` and must be excluded from later
+    diff planning as `D-*` drivers (they may still be mentioned narratively under risks).
+  expected_output: >
+    Markdown manifest (pt-BR) saved as `outputs/srs_meeting_update/srs_changes_manifest.md`
+    with:
+    1. A header listing transcript filename, total decisions, change-type tally.
+    2. A table with columns `D-id | change_type | transcript_target | requirement_ids |
+       summary | transcript_quote | impact_notes` (requirement_ids only when verbatim in the
+       transcript).
+    3. Sections `## Conflitos detectados` and `## Decisões inconclusivas`.
+  agent: srs_change_steward
+
+collect_notion_comment_suggestions_task:
+  description: >
+    Project: {project_name}. Phase: {phase_name}. Year: {current_year}.
+
+    Step 2 — **Sources allowed:** invoke **`notion_collect_srs_page_comments_via_claude` exactly
+    once**. Do **not** call `read_workflow_artifact`, `read_notion_publish_artifact`, or any tool
+    that reads local publish logs, SRS, or gap registries. The subprocess discovers the full page
+    tree from the Notion workspace root (`NOTION_SRS_PARENT_PAGE_ID` / `NOTION_SRS_PARENT_URL`)
+    via MCP only.
+
+    Paste the tool output **verbatim** at the top of your answer, then add `## Síntese do agente`
+    (pt-BR): page/comment counts, how `C-*` suggestions relate to the meeting manifest `D-*`
+    from the prior task **when the connection is obvious from shared transcript targets or
+    comment text alone**, and any scan errors called out by the tool.
+
+    Do not emit Notion body diff operations in this step — inventory + `C-*` only.
+  expected_output: >
+    Markdown report (pt-BR) saved as
+    `outputs/srs_meeting_update/notion_comment_suggestions.md` containing:
+    1. The verbatim `COMMENT_SCAN_*` tool output (must include `## Inventário de páginas (Notion)`
+       and `## Sugestões a partir de comentários (C-*)` as produced by the tool).
+    2. `## Síntese do agente` with counts, optional D↔C narrative links, and scan caveats.
+  agent: srs_change_steward
+
+plan_notion_diff_task:
+  description: >
+    Step 3 — **Sources allowed:** use only the **task context** injected by CrewAI from
+    `extract_meeting_decisions_task` and `collect_notion_comment_suggestions_task`. Do **not** use
+    tools that read `SRS.md`, `publish_plan.md`, `publish_execution_log.md`, `gaps_and_open_questions.md`,
+    or any other local file from other crews. Do **not** invent Notion URLs or page ids.
+
+    **Notion URLs:** every `page_url_or_id` in typed operations must come from the markdown table
+    `## Inventário de páginas (Notion)` inside the step-2 comment report (verbatim column values).
+
+    For each actionable `D-id` from the manifest (skip inconclusive) **and** each `C-id` that
+    implies a concrete documentation change supported by the comment excerpt and/or Notion page
+    body described in the report, emit typed operations tagged `[D-xxx]` and/or `[C-yyy]`.
+    Merge duplicates into one line `[D-xxx][C-yyy]` when both streams drive the same edit.
+
+    **Do not** append any `gaps_and_open_questions.md` annex — lacunas/conflitos on disk are out
+    of scope for this crew.
+
+    Typed operations:
+    - `add_page` — new sub-page under the workspace root (preserve section numbering in the title
+      when the transcript or comment supplies it verbatim).
+    - `remove_page` — archive/remove an existing page; only for full removals supported by evidence.
+    - `rename_page` — title change when evidence is explicit.
+    - `insert_block` / `update_block` / `remove_block` — block-level edits. Each must reference an
+      anchor (heading, paragraph fragment, or table row) and include the **full markdown** payload
+      when applicable (no summaries).
+
+    Determine the **proposed new version** per the semver policy in the steward identity
+    (`PATCH`/`MINOR`/`MAJOR`). If `ARVO_MEETING_UPDATE_NEXT_VERSION` was provided via
+    `{forced_next_version}`, use it verbatim when the placeholder is a real version string (not the
+    "(none — …)" sentinel) and note the override in the diff header.
+
+    If the comment scan returned `COMMENT_SCAN_FAILED` or an empty `C-*` table, still produce the
+    diff from meeting decisions only and note the gap under `## Riscos / lacunas`.
+  expected_output: >
+    Markdown diff (pt-BR) saved as `outputs/srs_meeting_update/notion_changes_diff.md` with:
+    1. A header: proposed `next_version`, semver justification, `planned_date` (ISO),
+       transcript filename, total operations, pointers to the manifest and comment report
+       filenames (relative paths only as human labels — do not rely on re-reading those files).
+    2. An ordered list of operations grouped by Notion page: each entry shows `[D-id]` and/or
+       `[C-id]`, page title, **page URL or id copied from the step-2 inventory table**, operation
+       type, anchor, and the full markdown payload when applicable.
+    3. A short impact summary and traceability map (`D-id` / `C-id` ↔ targets and requirement ids
+       **only when those ids appeared in the transcript or in the cited Notion comment/body text**).
+    4. `## Riscos / lacunas` when material unknowns remain.
+  agent: srs_change_steward

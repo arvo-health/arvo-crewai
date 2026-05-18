@@ -1,0 +1,33 @@
+collect_gap_conflict_manifest_task:
+  description: >
+    Project: {project_name}. Phase: {phase_name}. Year: {current_year}.
+    Max items to drive comments this run: {max_gap_items}.
+
+    Step A — Ingest active gaps and conflicts. Call read_workflow_artifact for
+    gaps_and_open_questions.md (required). Optionally read SRS.md, product.md, and overview.md
+    when they add conflicts or duplicate gap lists. Optionally call read_second_brain_file for
+    open-questions/index.md if the path exists and lists open questions not already covered.
+
+    Build a **manifest** markdown table: columns Item ID (e.g. G12, OQ-003), Type (gap|conflict),
+    Short summary, Severity if stated, 2–4 **search queries** for Notion (keywords only),
+    and 2–4 **draft questions** for the comment body. Respect the max item cap by prioritising
+    blockers/high severity first. Do not call Notion tools in this step.
+  expected_output: >
+    Markdown manifest with the table above plus a short paragraph on ordering/rationale.
+    Save-ready content for engineers; no API secrets.
+  agent: notion_gap_commenter
+
+post_notion_clarification_comments_task:
+  description: >
+    Step B — For each row in the manifest from the previous task (up to {max_gap_items} items),
+    run notion_search_pages for the listed queries, pick the best page_id (justify briefly in
+    your Thought trace), then post via notion_post_page_comment with merged text when multiple
+    items share a page. Skip items with no acceptable search hit — list skips in the output.
+    Stop after processing the manifest; do not re-read the entire SRS unnecessarily.
+
+    If {gap_sources_hint} is non-empty, treat it as extra human guidance (paths, priorities,
+    or Notion keywords) and fold it into search/query choices.
+  expected_output: >
+    Markdown execution log: per item id → chosen page_id/title → OK or SKIPPED or ERROR text
+    from tools; end with a tally and any follow-ups for humans.
+  agent: notion_gap_commenter

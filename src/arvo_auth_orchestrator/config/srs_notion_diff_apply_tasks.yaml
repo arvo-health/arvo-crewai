@@ -1,0 +1,19 @@
+apply_approved_notion_diff_task:
+  description: >
+    Project: {project_name}. Phase: {phase_name}. Year: {current_year}.
+
+    Apply the approved SRS change diff to Notion. The on-disk diff path is fixed:
+    `outputs/srs_meeting_update/notion_changes_diff.md`. Workspace root must be set via
+    NOTION_SRS_PARENT_PAGE_ID or NOTION_SRS_PARENT_URL.
+
+    Call **notion_apply_srs_changes_via_claude exactly once**. Do not use REST APIs or any other
+    Notion tools in this task. If the tool output begins with APPLY_PARTIAL or APPLY_FAILED,
+    summarize failed operations for the operator; do not attempt rollback.
+
+    Do not run srs_versions_local_update or notion_update_versions_section_via_claude — those
+    are out of scope for this crew.
+  expected_output: >
+    Markdown report (pt-BR) saved as `outputs/srs_meeting_update/diff_apply_execution_log.md`
+    containing the verbatim APPLY_OK / APPLY_PARTIAL / APPLY_FAILED block from the tool plus a
+    one-paragraph operator summary in pt-BR.
+  agent: notion_diff_applier

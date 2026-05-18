@@ -1,0 +1,49 @@
+apply_notion_changes_task:
+  description: >
+    Project: {project_name}. Phase: {phase_name}. Year: {current_year}.
+    Approved diff: `outputs/srs_meeting_update/notion_changes_diff.md`.
+    Workspace root: NOTION_SRS_PARENT_PAGE_ID or NOTION_SRS_PARENT_URL.
+
+    Step 3 — Apply the **approved** diff to Notion. Call
+    notion_apply_srs_changes_via_claude exactly ONCE. The tool reads the diff and manifest
+    from disk and runs Claude Code + Notion MCP to apply every operation in order. Do not
+    use REST APIs. Do not call other Notion tools first; the apply subprocess is the single
+    write authority for this task.
+
+    If the tool returns `APPLY_PARTIAL` or `APPLY_FAILED`, summarise the failed operations
+    so the operator knows what to revisit. Successful operations remain applied (no
+    automatic rollback).
+  expected_output: >
+    Markdown report (pt-BR) saved as
+    `outputs/srs_meeting_update/apply_execution_log.md` containing the verbatim
+    `APPLY_OK` / `APPLY_PARTIAL` / `APPLY_FAILED` output from the tool plus a short summary
+    paragraph for the operator.
+  agent: srs_change_steward
+
+update_srs_versions_section_task:
+  description: >
+    Step 4 — Record the new SRS version in both the local file and the Notion Versions
+    page. Read the apply execution log (read_meeting_update_artifact →
+    `apply_execution_log.md`) and the diff header (read_meeting_update_artifact →
+    `notion_changes_diff.md`) to obtain `next_version`, the applied operations, and the
+    planned date.
+
+    Compose a `summary_markdown` block (bullets per `D-id`, one line each, mentioning
+    change type and SRS target). Then, in this exact order:
+    1. Call srs_versions_local_update with `version_number`, `iso_date`
+       (`{application_date}` is the canonical orchestrator-supplied date — use it; never
+       hand-pick a different date), and the composed `summary_markdown`. If the response
+       reports duplicate version, surface the error in the final answer and stop.
+    2. Call notion_update_versions_section_via_claude with the same arguments to mirror the
+       entry on Notion.
+
+    Final answer must paste both tool responses verbatim and finish with a one-line
+    summary listing the new version, ISO date, and the Notion Versions page URL.
+  expected_output: >
+    Markdown log (pt-BR) saved as
+    `outputs/srs_meeting_update/versions_update_log.md` containing:
+    1. Local update status (one line, copied from srs_versions_local_update output).
+    2. Notion update status (`VERSIONS_OK` / `VERSIONS_CREATED` / `VERSIONS_FAILED`).
+    3. New version, ISO date, Notion Versions page URL.
+    4. Composed `summary_markdown` (so future audits see what was recorded).
+  agent: srs_change_steward

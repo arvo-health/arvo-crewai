@@ -1,0 +1,452 @@
+#!/usr/bin/env python
+import json
+import os
+import sys
+import warnings
+from datetime import datetime
+from pathlib import Path
+
+from arvo_auth_orchestrator.crew import ArvoAuthOrchestrator
+
+
+def _project_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
+
+
+def _default_inputs() -> dict:
+    return {
+        "initiative": os.getenv("ARVO_INITIATIVE", "Example initiative"),
+        "brief": os.getenv(
+            "ARVO_INITIATIVE_BRIEF",
+            "Summarize goals and list any second-brain paths to read (e.g. plans/backend/foo/plano.md).",
+        ),
+        "current_year": str(datetime.now().year),
+    }
+
+
+def run():
+    """Run the SDLC pipeline crew."""
+    inputs = _default_inputs()
+    try:
+        ArvoAuthOrchestrator().crew().kickoff(inputs=inputs)
+    except Exception as e:
+        raise Exception(f"An error occurred while running the crew: {e}") from e
+
+
+def _build_srs_inputs() -> dict:
+    """Shared kickoff/replay inputs for `SrsAuthorCrew` (same env as `run_srs`)."""
+    root = _project_root()
+
+    rules_name = os.getenv("ARVO_SRS_RULES_FILE", "srs_authoring_rules.md").strip()
+    rules_path = root / "knowledge" / rules_name
+    rules_text = (
+        rules_path.read_text(encoding="utf-8")
+        if rules_path.is_file()
+        else f"(missing rules file at knowledge/{rules_name})"
+    )
+
+    overview_file = os.getenv("ARVO_SRS_OVERVIEW_FILE", "").strip()
+    if overview_file:
+        op = Path(overview_file).expanduser()
+        product_overview = (
+            op.read_text(encoding="utf-8")
+            if op.is_file()
+            else f"(missing overview file: {op})"
+        )
+    else:
+        product_overview = os.getenv("ARVO_SRS_PRODUCT_OVERVIEW", "").strip()
+        if not product_overview:
+            product_overview = (
+                "(Set ARVO_SRS_PRODUCT_OVERVIEW or ARVO_SRS_OVERVIEW_FILE to the product "
+                "overview for this project/phase.)"
+            )
+
+    extra = os.getenv("ARVO_SRS_BRIEFING_MARKDOWN", "").strip()
+    if extra:
+        product_overview += "\n\n### Additional briefing\n" + extra
+
+    notion_ids = os.getenv("NOTION_PAGE_IDS", "").strip()
+    if notion_ids:
+        product_overview += (
+            "\n\n### Notion page IDs\n"
+            "Call fetch_notion_page_text once per UUID:\n"
+            + "\n".join(p.strip() for p in notion_ids.replace(",", " ").split() if p.strip())
+        )
+
+    return {
+        "project_name": os.getenv("ARVO_SRS_PROJECT_NAME", "Arvo authorization"),
+        "phase_name": os.getenv("ARVO_SRS_PHASE", "unspecified phase"),
+        "product_overview": product_overview,
+        "srs_authoring_rules": rules_text,
+        "current_year": str(datetime.now().year),
+    }
+
+
+def run_srs():
+    """Run the two-agent SRS workflow (artifacts under outputs/srs_workflow/)."""
+    from arvo_auth_orchestrator.srs_crew import SrsAuthorCrew
+
+    root = _project_root()
+    (root / "outputs" / "srs_workflow").mkdir(parents=True, exist_ok=True)
+
+    inputs = _build_srs_inputs()
+    try:
+        SrsAuthorCrew().crew().kickoff(inputs=inputs)
+    except Exception as e:
+        raise Exception(f"An error occurred while running the SRS crew: {e}") from e
+
+
+def _srs_replay_task_id_from_argv() -> str:
+    """First non-empty argv token after the script name, ignoring ``--`` (uv / POSIX separator)."""
+    for arg in sys.argv[1:]:
+        s = arg.strip()
+        if not s or s == "--":
+            continue
+        return s
+    return ""
+
+
+def run_srs_replay():
+    """Re-run `SrsAuthorCrew` from a stored task (e.g. pass 7 only) via CrewAI `replay`.
+
+    Requires a prior successful `kickoff` that persisted task outputs (same machine /
+    same CrewAI SQLite). Obtain the task UUID with `crewai log-tasks-outputs` and pass
+    the row for `author_srs_task` (last task in the SRS pipeline).
+
+    Task id: set `ARVO_SRS_REPLAY_TASK_ID` or pass the UUID on the command line. Tokens
+    ``--`` are skipped so both ``uv run run_srs_replay <uuid>`` and
+    ``uv run run_srs_replay -- <uuid>`` work.
+    """
+    from arvo_auth_orchestrator.srs_crew import SrsAuthorCrew
+
+    task_id = os.getenv("ARVO_SRS_REPLAY_TASK_ID", "").strip()
+    if not task_id:
+        task_id = _srs_replay_task_id_from_argv()
+    if not task_id:
+        raise Exception(
+            "Missing replay task id. Set ARVO_SRS_REPLAY_TASK_ID or pass the UUID as "
+            "the first argument (output of `crewai log-tasks-outputs` for "
+            "author_srs_task). Run a full `uv run run_srs` first so outputs are stored."
+        )
+
+    root = _project_root()
+    (root / "outputs" / "srs_workflow").mkdir(parents=True, exist_ok=True)
+
+    inputs = _build_srs_inputs()
+    try:
+        SrsAuthorCrew().crew().replay(task_id=task_id, inputs=inputs)
+    except ValueError as e:
+        msg_lower = str(e).lower()
+        if "not found" in msg_lower and "task" in msg_lower:
+            raise Exception(
+                f"An error occurred while replaying the SRS crew: {e}\n\n"
+                "The UUID you passed is not a persisted Task id (or nothing is stored). "
+                "Do not use the id from the run summary line (Crew Execution Completed / "
+                "SrsAuthorCrew id) — that is the crew run id, not a task id. "
+                "Run `crewai log-tasks-outputs` in `arvo_auth_orchestrator` and copy "
+                "`task_id` from the last row (author_srs_task, step 7). "
+                "If the list is empty or from another crew, run `uv run run_srs` again first."
+            ) from e
+        raise Exception(f"An error occurred while replaying the SRS crew: {e}") from e
+    except Exception as e:
+        raise Exception(f"An error occurred while replaying the SRS crew: {e}") from e
+
+
+def run_notion_publish():
+    """Publish SRS.md to Notion (independent crew; uses Notion API)."""
+    from arvo_auth_orchestrator.notion_publish_crew import SrsNotionPublishCrew
+
+    root = _project_root()
+    (root / "outputs" / "notion_export").mkdir(parents=True, exist_ok=True)
+
+    inputs = {
+        "project_name": os.getenv("ARVO_SRS_PROJECT_NAME", "Arvo authorization"),
+        "phase_name": os.getenv("ARVO_SRS_PHASE", "unspecified phase"),
+        "current_year": str(datetime.now().year),
+    }
+    try:
+        SrsNotionPublishCrew().crew().kickoff(inputs=inputs)
+    except Exception as e:
+        raise Exception(
+            f"An error occurred while running the Notion publish crew: {e}"
+        ) from e
+
+
+def _meeting_update_dir() -> Path:
+    return _project_root() / "outputs" / "srs_meeting_update"
+
+
+def _read_optional_text(path: Path, limit_chars: int = 6000) -> str:
+    if not path.is_file():
+        return ""
+    text = path.read_text(encoding="utf-8", errors="replace")
+    if len(text) <= limit_chars:
+        return text
+    return text[:limit_chars] + "\n\n[... truncated for terminal display ...]\n"
+
+
+def _resolve_meeting_transcript_or_raise() -> Path:
+    raw = os.getenv("ARVO_MEETING_TRANSCRIPT_FILE", "").strip()
+    if not raw and len(sys.argv) > 1:
+        for arg in sys.argv[1:]:
+            s = arg.strip()
+            if not s or s == "--":
+                continue
+            raw = s
+            break
+    if not raw:
+        raise Exception(
+            "Missing meeting transcript. Set ARVO_MEETING_TRANSCRIPT_FILE or pass the path "
+            "as the first argument to `uv run run_srs_meeting_update`."
+        )
+    p = Path(raw).expanduser()
+    candidate = p.resolve() if p.is_absolute() else (_project_root() / p).resolve()
+    if not candidate.is_file():
+        raise Exception(f"Meeting transcript not found at {candidate}.")
+    return candidate
+
+
+def _build_meeting_update_plan_inputs(
+    transcript_path: Path,
+    revision_iteration: int,
+    revision_feedback: str,
+    forced_next_version: str,
+    auto_approve: bool,
+) -> dict:
+    return {
+        "project_name": os.getenv("ARVO_SRS_PROJECT_NAME", "Arvo authorization"),
+        "phase_name": os.getenv("ARVO_SRS_PHASE", "unspecified phase"),
+        "current_year": str(datetime.now().year),
+        "transcript_path": str(transcript_path),
+        "revision_iteration": str(revision_iteration),
+        "revision_feedback": revision_feedback or "(none — first iteration)",
+        "forced_next_version": forced_next_version or "(none — propose semver from manifest)",
+        "auto_approve_mode": "1" if auto_approve else "0",
+    }
+
+
+def _build_meeting_update_apply_inputs(application_date: str) -> dict:
+    return {
+        "project_name": os.getenv("ARVO_SRS_PROJECT_NAME", "Arvo authorization"),
+        "phase_name": os.getenv("ARVO_SRS_PHASE", "unspecified phase"),
+        "current_year": str(datetime.now().year),
+        "application_date": application_date,
+    }
+
+
+def run_srs_meeting_update():
+    """Meeting transcript + Notion comments → manifest, comment report, and diff (ends here).
+
+    Runs `SrsMeetingChangesPlanCrew` only: (1) transcript manifest, (2) full Notion page/sub-page
+    comment scan via MCP, (3) unified `notion_changes_diff.md` merging `D-*` and `C-*` sources.
+
+    Required env: ARVO_MEETING_TRANSCRIPT_FILE (or path as first CLI argument),
+    NOTION_SRS_PARENT_PAGE_ID or NOTION_SRS_PARENT_URL (for the comment scan subprocess).
+
+    The plan crew uses **only** the transcript file and Notion (MCP) — it does not read
+    `publish_execution_log.md`, `SRS.md`, or other crews' outputs.
+
+    To apply the diff and bump Versions after manual review, run `uv run run_srs_meeting_update_apply`.
+    """
+    from arvo_auth_orchestrator.srs_meeting_update_crew import SrsMeetingChangesPlanCrew
+
+    transcript_path = _resolve_meeting_transcript_or_raise()
+    meeting_dir = _meeting_update_dir()
+    meeting_dir.mkdir(parents=True, exist_ok=True)
+
+    forced_next_version = os.getenv("ARVO_MEETING_UPDATE_NEXT_VERSION", "").strip()
+
+    plan_inputs = _build_meeting_update_plan_inputs(
+        transcript_path=transcript_path,
+        revision_iteration=0,
+        revision_feedback="",
+        forced_next_version=forced_next_version,
+        auto_approve=False,
+    )
+    try:
+        SrsMeetingChangesPlanCrew().crew().kickoff(inputs=plan_inputs)
+    except Exception as e:
+        raise Exception(
+            f"An error occurred while running the SRS meeting plan crew: {e}"
+        ) from e
+
+    diff_path = meeting_dir / "notion_changes_diff.md"
+    manifest_path = meeting_dir / "srs_changes_manifest.md"
+    comments_path = meeting_dir / "notion_comment_suggestions.md"
+
+    if not diff_path.is_file():
+        raise Exception(
+            f"Plan crew finished but {diff_path} was not produced. Check the agent "
+            "verbose log for errors before re-running."
+        )
+
+    print("\nSRS meeting update (plan) finished.")
+    print(f"  - manifest:           {manifest_path}")
+    print(f"  - comment scan:       {comments_path}")
+    print(f"  - diff:               {diff_path}")
+    print("\n---- Comment scan preview (first 4000 chars) ----")
+    print(_read_optional_text(comments_path, limit_chars=4000))
+    print("---- Diff preview (first 6000 chars) ----")
+    print(_read_optional_text(diff_path))
+    print("---- end previews ----\n")
+    print(
+        "To apply this diff to Notion and update Versions after you review it, run:\n"
+        "  uv run run_srs_meeting_update_apply\n"
+        "To apply only the Notion operations from the diff (no Versions step), run:\n"
+        "  uv run run_srs_notion_diff_apply\n"
+    )
+
+
+def run_srs_meeting_update_apply():
+    """Apply `notion_changes_diff.md` to Notion and update SRS Versions (optional second phase).
+
+    Run only after manual review of the diff produced by `uv run run_srs_meeting_update`.
+    Requires NOTION_SRS_PARENT_PAGE_ID or NOTION_SRS_PARENT_URL.
+    """
+    from arvo_auth_orchestrator.srs_meeting_update_crew import SrsMeetingChangesApplyCrew
+
+    meeting_dir = _meeting_update_dir()
+    meeting_dir.mkdir(parents=True, exist_ok=True)
+
+    diff_path = meeting_dir / "notion_changes_diff.md"
+    if not diff_path.is_file():
+        raise Exception(
+            f"No diff at {diff_path}. Run `uv run run_srs_meeting_update` first to generate "
+            "the plan artefacts."
+        )
+
+    application_date = datetime.now().date().isoformat()
+    apply_inputs = _build_meeting_update_apply_inputs(application_date=application_date)
+    try:
+        SrsMeetingChangesApplyCrew().crew().kickoff(inputs=apply_inputs)
+    except Exception as e:
+        raise Exception(
+            f"An error occurred while running the SRS meeting apply crew: {e}"
+        ) from e
+
+    print("\nSRS meeting update (apply) finished.")
+    print(f"  - apply log:     {meeting_dir / 'apply_execution_log.md'}")
+    print(f"  - versions log:  {meeting_dir / 'versions_update_log.md'}")
+
+
+def _build_notion_diff_apply_inputs() -> dict:
+    return {
+        "project_name": os.getenv("ARVO_SRS_PROJECT_NAME", "Arvo authorization"),
+        "phase_name": os.getenv("ARVO_SRS_PHASE", "unspecified phase"),
+        "current_year": str(datetime.now().year),
+    }
+
+
+def run_srs_notion_diff_apply():
+    """Apply only `notion_changes_diff.md` to Notion (no SRS / Notion Versions update).
+
+    Use after manual review of the diff. Requires NOTION_SRS_PARENT_PAGE_ID or
+    NOTION_SRS_PARENT_URL. Writes `outputs/srs_meeting_update/diff_apply_execution_log.md`.
+
+    To also bump the Versions section locally and on Notion, use `uv run run_srs_meeting_update_apply`
+    instead.
+    """
+    from arvo_auth_orchestrator.srs_notion_diff_apply_crew import SrsNotionDiffApplyCrew
+
+    meeting_dir = _meeting_update_dir()
+    meeting_dir.mkdir(parents=True, exist_ok=True)
+
+    diff_path = meeting_dir / "notion_changes_diff.md"
+    if not diff_path.is_file():
+        raise Exception(
+            f"No diff at {diff_path}. Generate a diff first (e.g. `uv run run_srs_meeting_update`)."
+        )
+
+    inputs = _build_notion_diff_apply_inputs()
+    try:
+        SrsNotionDiffApplyCrew().crew().kickoff(inputs=inputs)
+    except Exception as e:
+        raise Exception(
+            f"An error occurred while running the Notion diff apply crew: {e}"
+        ) from e
+
+    log_path = meeting_dir / "diff_apply_execution_log.md"
+    print("\nSRS Notion diff apply finished.")
+    print(f"  - diff apply log: {log_path}")
+
+
+def run_notion_gap_comments():
+    """Post Notion page comments to clarify gaps/conflicts (REST API; requires API key)."""
+    from arvo_auth_orchestrator.notion_gap_comment_crew import NotionGapCommentCrew
+
+    root = _project_root()
+    (root / "outputs" / "notion_gap_comments").mkdir(parents=True, exist_ok=True)
+
+    max_raw = os.getenv("ARVO_GAP_COMMENT_MAX_ITEMS", "15").strip()
+    max_gap_items = max_raw if max_raw.isdigit() else "15"
+
+    inputs = {
+        "project_name": os.getenv("ARVO_SRS_PROJECT_NAME", "Arvo authorization"),
+        "phase_name": os.getenv("ARVO_SRS_PHASE", "unspecified phase"),
+        "current_year": str(datetime.now().year),
+        "max_gap_items": max_gap_items,
+        "gap_sources_hint": os.getenv("ARVO_GAP_COMMENT_SOURCES_HINT", "").strip(),
+    }
+    try:
+        NotionGapCommentCrew().crew().kickoff(inputs=inputs)
+    except Exception as e:
+        raise Exception(
+            f"An error occurred while running the Notion gap comment crew: {e}"
+        ) from e
+
+
+def train():
+    """Train the crew for a given number of iterations."""
+    inputs = _default_inputs()
+    try:
+        ArvoAuthOrchestrator().crew().train(
+            n_iterations=int(sys.argv[1]), filename=sys.argv[2], inputs=inputs
+        )
+    except Exception as e:
+        raise Exception(f"An error occurred while training the crew: {e}") from e
+
+
+def replay():
+    """Replay the crew execution from a specific task."""
+    try:
+        ArvoAuthOrchestrator().crew().replay(task_id=sys.argv[1])
+    except Exception as e:
+        raise Exception(f"An error occurred while replaying the crew: {e}") from e
+
+
+def test():
+    """Test the crew execution and return the results."""
+    inputs = _default_inputs()
+    try:
+        ArvoAuthOrchestrator().crew().test(
+            n_iterations=int(sys.argv[1]), eval_llm=sys.argv[2], inputs=inputs
+        )
+    except Exception as e:
+        raise Exception(f"An error occurred while testing the crew: {e}") from e
+
+
+def run_with_trigger():
+    """Run the crew with trigger payload (JSON)."""
+    if len(sys.argv) < 2:
+        raise Exception(
+            "No trigger payload provided. Please provide JSON payload as argument."
+        )
+    try:
+        trigger_payload = json.loads(sys.argv[1])
+    except json.JSONDecodeError as exc:
+        raise Exception("Invalid JSON payload provided as argument") from exc
+
+    inputs = {
+        "crewai_trigger_payload": trigger_payload,
+        "initiative": trigger_payload.get("initiative", ""),
+        "brief": trigger_payload.get("brief", ""),
+        "current_year": str(datetime.now().year),
+    }
+    try:
+        return ArvoAuthOrchestrator().crew().kickoff(inputs=inputs)
+    except Exception as e:
+        raise Exception(
+            f"An error occurred while running the crew with trigger: {e}"
+        ) from e

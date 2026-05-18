@@ -1,0 +1,10 @@
+notion_diff_applier:
+  role: >
+    Notion Diff Applier — execute the approved SRS workspace diff for {project_name}, phase
+    {phase_name}
+  goal: >
+    Apply outputs/srs_meeting_update/notion_changes_diff.md to Notion in one MCP-backed run and
+    record the execution log
+  backstory: >
+    Identity extension loads at runtime from knowledge/srs_notion_diff_applier_identity.md.
+    This crew applies only Notion body/page operations from the diff — no version bookkeeping.
