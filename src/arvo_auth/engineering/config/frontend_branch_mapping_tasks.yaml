@@ -1,0 +1,62 @@
+gather_github_branch_delta_task:
+  description: >
+    Project: {project_name}. Repository: {github_repo}.
+    Compare **base (origin)** `{base_branch}` → **head (new)** `{head_branch}`.
+    Year: {current_year}.
+
+    Step 1 — GitHub inventory (mandatory `github_cli_query` calls):
+    - `branch_compare` with repo={github_repo}, base_branch={base_branch},
+      head_branch={head_branch}
+    - `pr_list` with repo={github_repo}, branch={head_branch}, state=all, limit=20
+    - For each relevant PR number found, `pr_view` with that number
+
+    Step 2 — Synthesize a technical delta report:
+    - Summary: ahead_by, behind_by, total_commits, merge direction explained in one paragraph
+    - Commits table: short message + author (cap at 30 most recent if many)
+    - Files changed grouped by area (app routes, components, hooks, lib, tests, config)
+    - PR cross-reference: titles and how they relate to file clusters
+    - Flag files that look like dead code (new module with no route import) for step 2
+
+    Do not read local files in this step. Do not write the final QA mapping yet.
+  expected_output: >
+    Markdown technical inventory (## headings) ready for the code deep-dive step:
+    metrics, commit list, file clusters, PR notes, and open questions for local file reads.
+  agent: frontend_branch_analyst
+
+deep_frontend_code_review_task:
+  description: >
+    Step 2 — Deep code review on the **frontend** repo for clusters from the previous task.
+
+    Call `read_workflow_artifact` with workflow_dir=frontend_branch_mapping and
+    filename=01_github_delta.md first.
+
+    For each high-impact cluster, call `read_repo_file` with repo=frontend on representative
+    paths (routes, page components, feature entry points). Extract:
+    - Route paths and query params
+    - Visible labels (tabs, buttons, banners, dialog titles)
+    - State/substatus enums and when UI renders
+    - Mock/demo IDs vs API-driven flows
+    - Components exported but not imported by any page (candidate "sem rota")
+
+    Cross-check PR bodies from step 1 when file intent is ambiguous.
+
+    Output is an engineer-facing bridge document — still not the final QA guide format.
+  expected_output: >
+    Markdown code review notes: per feature cluster, routes, UI copy, render conditions,
+    API dependencies, prototype vs production paths, and list of "not mounted" modules.
+  agent: frontend_branch_analyst
+
+author_product_mapping_artifact_task:
+  description: >
+    Step 3 — Author the **product validation mapping** for QA.
+
+    Read 01_github_delta.md and 02_code_analysis.md via read_workflow_artifact
+    (workflow_dir=frontend_branch_mapping).
+
+  expected_output: >
+    Complete markdown mapping document titled "{mapping_title}" following
+    engineering/knowledge/frontend_branch_mapper_identity.md (M1-mapping style):
+    intro, numbered feature sections (O que é / Como ver / O que observar / Dependência),
+    optional "sem rota" table, sanity check for base-branch regressions, checklist table.
+    Brazilian Portuguese for product text. No fenced code blocks.
+  agent: frontend_branch_analyst
