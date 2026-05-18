@@ -6,7 +6,7 @@
 | --- | --- |
 | **Classe** | `FrontendBranchMappingCrew` |
 | **Ficheiro** | `src/arvo_auth/engineering/frontend_branch_mapping_crew.py` |
-| **Configuração** | `src/arvo_auth/engineering/config/frontend_branch_mapping_agents.yaml`, `frontend_branch_mapping_tasks.yaml` |
+| **Configuração** | `src/arvo_auth/engineering/config/frontend_branch_mapping_agents.yaml`, `src/arvo_auth/engineering/config/frontend_branch_mapping_tasks.yaml` |
 | **Processo** | Sequencial |
 | **Comando** | `uv run run_frontend_branch_mapping` |
 | **Entrada em código** | `arvo_auth.main.run_frontend_branch_mapping()` |
@@ -38,7 +38,7 @@ Exemplo de referência de formato de saída (fora deste repo):
 
 | Agente | Ferramentas | Identidade em runtime |
 | --- | --- | --- |
-| **frontend_branch_analyst** | `GitHubCliTool`, `RepoReadTool`, `WorkflowOutputReadTool` | `engineering/knowledge/frontend_branch_mapper_identity.md` (append ao backstory) |
+| **frontend_branch_analyst** | `GitHubCliTool`, `RepoReadTool`, `WorkflowOutputReadTool` | `src/arvo_auth/engineering/knowledge/frontend_branch_mapper_identity.md` (append ao backstory) |
 
 ### `github_cli_query` — operações usadas neste crew
 
@@ -76,7 +76,7 @@ Para este crew, usar sempre `workflow_dir=frontend_branch_mapping` e um dos fich
 
 | Ficheiro | Uso |
 | --- | --- |
-| `engineering/knowledge/frontend_branch_mapper_identity.md` | Missão, disciplina de tools, template M1-mapping, tom e método de análise |
+| `src/arvo_auth/engineering/knowledge/frontend_branch_mapper_identity.md` | Missão, disciplina de tools, template M1-mapping, tom e método de análise |
 
 ### Infraestrutura
 
@@ -147,7 +147,7 @@ flowchart TB
 
 ## Formato do entregável (`branch_mapping.md`)
 
-Estrutura obrigatória (detalhe em `engineering/knowledge/frontend_branch_mapper_identity.md`):
+Estrutura obrigatória (detalhe em `src/arvo_auth/engineering/knowledge/frontend_branch_mapper_identity.md`):
 
 1. Título e introdução (como usar, ambiente típico).
 2. Secções numeradas por capacidade de produto:
@@ -197,12 +197,12 @@ Texto de produto em **português (pt-BR)**; identificadores técnicos e paths em
 
 ## Referências no repositório
 
-- Crew: `src/arvo_auth/frontend_branch_mapping_crew.py`
-- Tarefas: `src/arvo_auth/config/frontend_branch_mapping_tasks.yaml`
-- Agentes: `src/arvo_auth/config/frontend_branch_mapping_agents.yaml`
+- Crew: `src/arvo_auth/engineering/frontend_branch_mapping_crew.py`
+- Tarefas: `src/arvo_auth/engineering/config/frontend_branch_mapping_tasks.yaml`
+- Agentes: `src/arvo_auth/engineering/config/frontend_branch_mapping_agents.yaml`
 - Entrada: `src/arvo_auth/main.py` (`run_frontend_branch_mapping`, `_build_frontend_branch_mapping_inputs`)
 - Tool GitHub: `src/arvo_auth/core/tools/github_cli_tool.py` (operação `branch_compare`)
 - Tool repo: `src/arvo_auth/core/tools/repo_read_tool.py`
 - Tool artefactos: `src/arvo_auth/core/tools/workflow_output_read_tool.py`
-- Identidade: `engineering/knowledge/frontend_branch_mapper_identity.md`
+- Identidade: `src/arvo_auth/engineering/knowledge/frontend_branch_mapper_identity.md`
 - Exemplo externo de formato: `../arvo-auth-frontend/M1-mapping.md`
