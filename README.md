@@ -1,6 +1,6 @@
 # Arvo Auth Orchestrator
 
-Python package with **CrewAI console entry points** for the Arvo workspace. Coordinates multi-crew workflows for software lifecycle management, SRS authoring, and Notion publishing.
+Python package with **CrewAI console entry points** for the Arvo workspace. Automates software development lifecycle workflows.
 
 *Documentação em Português: [README.pt-BR.md](README.pt-BR.md)*
 
@@ -37,6 +37,51 @@ Agent LLM routing is controlled by `ARVO_LLM_BACKEND` and `ANTHROPIC_API_KEY`:
 Set `ARVO_LLM_BACKEND=claude_code` to force CLI mode even if `ANTHROPIC_API_KEY` is present.
 
 CLI mode options: `CLAUDE_CODE_BIN`, `ARVO_CREWAI_CLAUDE_CODE_TIMEOUT_SEC`, `ARVO_CLAUDE_CODE_CONTEXT_WINDOW`, `ARVO_CLAUDE_CODE_MODEL_LABEL`.
+
+---
+
+## Core Concepts
+
+Understanding these entities is essential to use the tool correctly.
+
+### Agent
+
+An autonomous AI unit with a defined **role**, **goal**, and **backstory** (identity). Each agent reasons independently, selects which tools to invoke, and produces an output for its assigned task. Agents do not share state directly — they communicate through task outputs.
+
+### Task
+
+A discrete unit of work assigned to a specific agent. Each task has a description, an expected output, and writes an artifact to disk (e.g. `SRS.md`, `notion_changes_diff.md`). Tasks run sequentially within a crew; the output of one task is available as context to the next.
+
+### Tool
+
+A capability that an agent can invoke during task execution. Tools in this project handle concrete side effects: reading files from disk, calling the Notion REST API, or delegating actions to a `claude -p` subprocess via MCP. Agents decide autonomously when and how to use them.
+
+### Knowledge File
+
+A markdown file injected into an agent's backstory at startup (e.g. `knowledge/srs_author_identity.md`). It shapes the agent's identity, constraints, and decision-making style without being a task prompt. Changing a knowledge file changes how the agent behaves across all tasks it runs.
+
+### Crew
+
+An orchestrated, self-contained group of agents and tasks that runs to completion as a single unit. One CLI command = one crew. A crew has no external dependencies on other crews at runtime — it only reads from disk and writes to disk. Crews are the **unit of execution** in this tool.
+
+### Flow
+
+A user-level sequence of crew commands that together achieve an end-to-end goal. Flows are not a runtime construct — they are a coordination pattern where the output artifacts of one crew become the input artifacts of the next. The user is responsible for running each step in order and reviewing intermediate outputs before proceeding.
+
+**Key distinction:** a crew is a single atomic execution; a flow is a multi-step process that requires human checkpoints between crews.
+
+```
+Flow: SRS Authoring → Notion Publish
+  └─ Step 1: uv run run_srs          → outputs/srs_workflow/SRS.md
+  └─ Step 2: uv run run_notion_publish  ← reads SRS.md → publishes to Notion
+```
+
+```
+Flow: Meeting-Driven SRS Update
+  └─ Step 1: uv run run_srs_meeting_update  → notion_changes_diff.md
+  └─ [human review of diff]
+  └─ Step 2: uv run run_srs_notion_diff_apply   (or run_srs_meeting_update_apply)
+```
 
 ---
 
