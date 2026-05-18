@@ -1,4 +1,4 @@
-# Arvo Auth Orchestrator
+# Arvo Auth CrewAI
 
 Pacote Python com **comandos CrewAI** para o workspace Arvo. Automatiza fluxos do ciclo de vida de desenvolvimento de software.
 

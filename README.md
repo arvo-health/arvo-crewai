@@ -1,4 +1,4 @@
-# Arvo Auth Orchestrator
+# Arvo Auth CrewAI
 
 Python package with **CrewAI console entry points** for the Arvo workspace. Automates software development lifecycle workflows.
 
