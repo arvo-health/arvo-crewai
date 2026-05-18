@@ -84,7 +84,7 @@ Para este crew, usar sempre `workflow_dir=frontend_branch_mapping` e um dos fich
 | --- | --- |
 | **GitHub CLI** | `gh` instalado e autenticado (`gh auth login`) com acesso de leitura ao repo |
 | **Branches no remoto** | `base_branch` e `head_branch` devem existir no GitHub; compare vazio se a head já foi totalmente integrada na base |
-| **LLM** | `default_llm()` — API Anthropic ou `ARVO_LLM_BACKEND=claude_code` |
+| **LLM** | `default_llm()` — API Anthropic ou `ARVO_LLM_BACKEND=claude_code`. Com `claude_code`, definir `CLAUDE_CODE_PERMISSION_MODE=bypassPermissions` para que comandos `gh` não exijam aprovação manual. |
 | **Repo local** | Leitura do frontend para rotas e labels; sem clone local o passo 2 fica limitado ao diff GitHub |
 
 ### Diretório de saída
