@@ -86,7 +86,11 @@ Regras:
 
 ## Passo 5 — Implemente as tools necessárias
 
-Tools são a interface entre o agente e o mundo externo. Crie em `src/arvo_auth_orchestrator/tools/`:
+Tools são a interface entre o agente e o mundo externo.
+
+**Tools compartilhadas** (reutilizáveis por qualquer time) ficam em `src/arvo_auth/core/tools/`.
+
+**Tools específicas de um time** ficam dentro do próprio diretório do time (ex: `src/arvo_auth/<nome_do_time>/tools/`).
 
 ```python
 from crewai.tools import BaseTool
@@ -109,12 +113,13 @@ Regras:
 - Uma tool por responsabilidade
 - `description` é lida pelo agente para decidir quando usar a tool — seja preciso
 - Efeitos colaterais (escrita, API calls) devem estar isolados em tools, nunca em agentes
+- Prefira reutilizar tools de `core/tools/` antes de criar novas
 
 ---
 
 ## Passo 6 — Crie o knowledge file do agente (opcional)
 
-Quando o backstory do agente for longo ou reutilizável, extraia para `knowledge/<nome>_identity.md`:
+Quando o backstory do agente for longo ou reutilizável, extraia para `src/arvo_auth/<nome_do_time>/knowledge/<nome>_identity.md`:
 
 ```markdown
 Você é um especialista em [domínio].
@@ -134,13 +139,15 @@ Injete no crew via `knowledge_sources` ou interpolando no campo `backstory` do Y
 
 ## Passo 7 — Implemente a classe do crew
 
-Crie o arquivo do crew em `src/arvo_auth_orchestrator/<nome>_crew.py`:
+Crie o arquivo do crew em `src/arvo_auth/<nome_do_time>/<nome>_crew.py`:
 
 ```python
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
-from arvo_auth_orchestrator.llm_defaults import default_llm
-from arvo_auth_orchestrator.tools.minha_file_tool import MinhaFileTool
+from arvo_auth.core.llm_defaults import default_llm
+from arvo_auth.core.tools.minha_file_tool import MinhaFileTool  # tool compartilhada
+# ou, para tool específica do time:
+# from arvo_auth.<nome_do_time>.tools.minha_file_tool import MinhaFileTool
 
 @CrewBase
 class MeuCrew:
@@ -174,10 +181,13 @@ class MeuCrew:
 
 ## Passo 8 — Registre o entry point CLI
 
-Em `src/arvo_auth_orchestrator/main.py`, adicione a função de entrada:
+Em `src/arvo_auth/main.py`, adicione a função de entrada:
 
 ```python
 def run_meu_flow():
+    from arvo_auth.<nome_do_time>.meu_crew import MeuCrew
+    root = _project_root()
+    (root / "outputs" / "<nome_do_time>" / "meu_workflow").mkdir(parents=True, exist_ok=True)
     MeuCrew().crew().kickoff(inputs={
         "variavel": os.getenv("MINHA_VARIAVEL", "valor_padrao"),
     })
@@ -187,7 +197,7 @@ Em `pyproject.toml`, registre o comando:
 
 ```toml
 [project.scripts]
-run_meu_flow = "arvo_auth_orchestrator.main:run_meu_flow"
+run_meu_flow = "arvo_auth.main:run_meu_flow"
 ```
 
 Após isso, execute com:
