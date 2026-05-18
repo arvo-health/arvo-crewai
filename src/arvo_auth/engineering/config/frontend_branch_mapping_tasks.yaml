@@ -53,6 +53,14 @@ author_product_mapping_artifact_task:
     Read 01_github_delta.md and 02_code_analysis.md via read_workflow_artifact
     (workflow_dir=frontend_branch_mapping).
 
+    Consolidate the delta (step 1) and code review (step 2) into the final product
+    validation mapping. Apply the M1-mapping template: numbered feature sections
+    (O que é / Como ver / O que observar / Dependência), sem-rota table for
+    components not mounted in any route, sanity section for base-branch behaviors
+    that must not regress (auth, API-driven flows), and the quick-check checklist
+    table. Write all product-facing text in Brazilian Portuguese. No fenced code
+    blocks — use inline backticks for paths and identifiers only.
+
   expected_output: >
     Complete markdown mapping document titled "{mapping_title}" following
     engineering/knowledge/frontend_branch_mapper_identity.md (M1-mapping style):

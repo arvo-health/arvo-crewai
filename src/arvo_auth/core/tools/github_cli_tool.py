@@ -177,8 +177,9 @@ class GitHubCliTool(BaseTool):
             "number,title,state,url,author,headRefName,baseRefName,updatedAt",
         ]
         st = state.strip().lower()
-        if st in ("open", "closed", "merged", "all"):
-            args.extend(["--state", st])
+        if st not in ("open", "closed", "merged", "all"):
+            return f"ERROR: unknown state {state!r}. Use open, closed, merged, or all."
+        args.extend(["--state", st])
         if search.strip():
             args.extend(["--search", search.strip()])
         if branch.strip():
@@ -223,8 +224,9 @@ class GitHubCliTool(BaseTool):
             "number,title,state,url,author,labels,updatedAt",
         ]
         st = state.strip().lower()
-        if st in ("open", "closed", "all"):
-            args.extend(["--state", st])
+        if st not in ("open", "closed", "all"):
+            return f"ERROR: unknown state {state!r}. Use open, closed, or all."
+        args.extend(["--state", st])
         if search.strip():
             args.extend(["--search", search.strip()])
         return run_gh(args, repo=repo)
@@ -274,7 +276,7 @@ class GitHubCliTool(BaseTool):
         )
 
     @staticmethod
-    def _normalize_branch(name: str, label: str) -> str | None:
+    def _normalize_branch(name: str, label: str) -> str:
         cleaned = name.strip()
         if not cleaned:
             return f"ERROR: {label} is required."
@@ -291,10 +293,10 @@ class GitHubCliTool(BaseTool):
         if not repo:
             return "ERROR: branch_compare requires repo (owner/name)."
         base = self._normalize_branch(base_branch, "base_branch")
-        if base and base.startswith("ERROR"):
+        if base.startswith("ERROR"):
             return base
         head = self._normalize_branch(head_branch, "head_branch")
-        if head and head.startswith("ERROR"):
+        if head.startswith("ERROR"):
             return head
         compare_ref = f"{base}...{head}"
         endpoint = f"/repos/{repo}/compare/{compare_ref}"

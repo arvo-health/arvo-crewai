@@ -383,8 +383,11 @@ def _default_frontend_github_repo() -> str:
         try:
             import subprocess
 
+            from arvo_auth.core.tools.github_cli_common import gh_binary
+
+            binary = gh_binary() or "gh"
             completed = subprocess.run(
-                ["gh", "repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"],
+                [binary, "repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"],
                 capture_output=True,
                 text=True,
                 timeout=30,
