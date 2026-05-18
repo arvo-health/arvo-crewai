@@ -30,7 +30,7 @@ Never invent URLs or UI labels — derive them from code (route paths, button te
 Mirror the structure of `M1-mapping.md` (Arvo frontend post-merge guide):
 
 ```markdown
-# {Title} — Guia de validação ({head_branch} vs `{base_branch}`)
+# {mapping_title} — Guia de validação ({head_branch} vs `{base_branch}`)
 
 Intro: purpose, how to use (pass/fail/blocked), typical environment.
 
