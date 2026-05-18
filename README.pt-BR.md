@@ -44,6 +44,34 @@ Opções do modo CLI: `CLAUDE_CODE_BIN`, `ARVO_CREWAI_CLAUDE_CODE_TIMEOUT_SEC`, 
 
 Compreender estas entidades é essencial para utilizar a ferramenta corretamente.
 
+```mermaid
+graph TD
+    F["Flow\n(objetivo fim-a-fim)"]
+    C1["Crew A\n(execução atômica)"]
+    C2["Crew B\n(execução atômica)"]
+    H(["Checkpoint humano\n(revisão de artefatos)"])
+    A1["Agent"]
+    A2["Agent"]
+    T1["Task → artefato"]
+    T2["Task → artefato"]
+    TL1["Tool"]
+    TL2["Tool"]
+    K["Knowledge File\n(identidade / backstory)"]
+
+    F --> C1
+    F --> H
+    H --> C2
+    C1 --> A1
+    C1 --> A2
+    A1 --> T1
+    A2 --> T2
+    T1 -->|"artefato em disco"| C2
+    A1 --> TL1
+    A2 --> TL2
+    K -->|"injetado em"| A1
+    K -->|"injetado em"| A2
+```
+
 ### Agent (Agente)
 
 Unidade de IA autônoma com **papel**, **objetivo** e **backstory** (identidade) definidos. Cada agente raciocina de forma independente, decide quais ferramentas invocar e produz uma saída para a tarefa que lhe foi atribuída. Agentes não compartilham estado diretamente — comunicam-se através dos artefatos gerados pelas tarefas.
@@ -82,6 +110,8 @@ Flow: Atualização SRS por Reunião
   └─ [revisão humana do diff]
   └─ Etapa 2: uv run run_srs_notion_diff_apply   (ou run_srs_meeting_update_apply)
 ```
+
+Para criar um novo flow: [docs/como-criar-um-flow.md](docs/como-criar-um-flow.md)
 
 ---
 
