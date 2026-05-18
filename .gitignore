@@ -1,10 +1,6 @@
 .env
 __pycache__/
 .DS_Store
-outputs/sdlc_pipeline_report.md
-outputs/srs_workflow/*.md
-outputs/notion_export/*.md
-outputs/notion_gap_comments/*.md
-outputs/srs_meeting_update/*.md
+outputs/
 report.md
 .crewai_runtime_home/
