@@ -86,7 +86,7 @@ A capability that an agent can invoke during task execution. Tools in this proje
 
 ### Knowledge File
 
-A markdown file injected into an agent's backstory at startup (e.g. `knowledge/srs_author_identity.md`). It shapes the agent's identity, constraints, and decision-making style without being a task prompt. Changing a knowledge file changes how the agent behaves across all tasks it runs.
+A markdown file injected into an agent's backstory at startup (e.g. `engineering/knowledge/srs_author_identity.md`). It shapes the agent's identity, constraints, and decision-making style without being a task prompt. Changing a knowledge file changes how the agent behaves across all tasks it runs.
 
 ### Crew
 
@@ -112,6 +112,100 @@ Flow: Meeting-Driven SRS Update
 ```
 
 To create a new flow: [docs/como-criar-um-flow.md](docs/como-criar-um-flow.md) *(pt-BR)*
+
+---
+
+## Multi-Team Organization
+
+The package is structured around **teams**. Each team owns an isolated directory containing its crews, config YAMLs, knowledge files, and outputs.
+
+```mermaid
+graph TD
+    PKG["src/arvo_auth/"]
+    CORE["core/\n(shared infrastructure)"]
+    TOOLS["core/tools/\n(all shared tools)"]
+    ENG["engineering/\n(built-in team)"]
+    ENGC["engineering/config/"]
+    ENGK["engineering/knowledge/"]
+    ENGO["outputs/engineering/"]
+    NEW["&lt;your_team&gt;/\n(new team)"]
+    NEWC["&lt;your_team&gt;/config/"]
+    NEWK["&lt;your_team&gt;/knowledge/"]
+    NEWO["outputs/&lt;your_team&gt;/"]
+
+    PKG --> CORE
+    CORE --> TOOLS
+    PKG --> ENG
+    ENG --> ENGC
+    ENG --> ENGK
+    ENG -.->|"writes to"| ENGO
+    PKG --> NEW
+    NEW --> NEWC
+    NEW --> NEWK
+    NEW -.->|"writes to"| NEWO
+```
+
+### Adding a new team
+
+1. Create the team directory and required subdirectories:
+
+```bash
+mkdir -p src/arvo_auth/<team_name>/config
+mkdir -p src/arvo_auth/<team_name>/knowledge
+touch src/arvo_auth/<team_name>/__init__.py
+```
+
+2. Write crew files inside `src/arvo_auth/<team_name>/`, following the same `@CrewBase` pattern used in `engineering/`. Config YAMLs go in `<team_name>/config/`, identity files in `<team_name>/knowledge/`.
+
+3. Name output files under `outputs/<team_name>/` to keep artifacts isolated:
+
+```python
+output_file="outputs/<team_name>/my_workflow/result.md"
+```
+
+4. Register entry points in `src/arvo_auth/main.py` and `pyproject.toml`:
+
+```python
+# main.py
+def run_my_team_flow():
+    from arvo_auth.<team_name>.my_crew import MyCrew
+    MyCrew().crew().kickoff(inputs={...})
+```
+
+```toml
+# pyproject.toml
+[project.scripts]
+run_my_team_flow = "arvo_auth.main:run_my_team_flow"
+```
+
+### Reusing flows from another team
+
+Crew classes are standard Python — import and use them directly. All tools in `core/tools/` are available to every team.
+
+**Run an existing crew as-is:**
+
+```python
+from arvo_auth.engineering.srs_crew import SrsAuthorCrew
+
+SrsAuthorCrew().crew().kickoff(inputs={...})
+```
+
+**Subclass to override config or knowledge files:**
+
+```python
+from arvo_auth.engineering.srs_crew import SrsAuthorCrew
+
+class MyTeamSrsCrew(SrsAuthorCrew):
+    agents_config = "config/my_srs_agents.yaml"   # team-specific prompts
+    tasks_config  = "config/my_srs_tasks.yaml"
+```
+
+**Use a shared tool in a new crew:**
+
+```python
+from arvo_auth.core.tools.workflow_output_read_tool import WorkflowOutputReadTool
+from arvo_auth.core.llm_defaults import default_llm
+```
 
 ---
 
@@ -151,7 +245,7 @@ uv run run_notion_publish
 
 ```bash
 uv run run_srs_meeting_update -- /path/to/transcript.md
-# Review outputs/srs_meeting_update/notion_changes_diff.md, then:
+# Review outputs/engineering/srs_meeting_update/notion_changes_diff.md, then:
 uv run run_srs_notion_diff_apply          # Notion only
 # or:
 uv run run_srs_meeting_update_apply       # Notion + Versions bump
@@ -163,25 +257,29 @@ uv run run_srs_meeting_update_apply       # Notion + Versions bump
 
 ```
 arvo_auth_orchestrator/
-├── knowledge/                            # Agent identity and authoring rules files
 ├── outputs/                              # Runtime artifacts (gitignored)
-│   ├── srs_workflow/
-│   ├── notion_export/
-│   ├── notion_gap_comments/
-│   └── srs_meeting_update/
-├── src/arvo_auth_orchestrator/
-│   ├── config/                           # agents.yaml + tasks.yaml per crew
-│   ├── tools/                            # Custom CrewAI tools (file I/O, Notion REST/MCP)
-│   ├── crew.py                           # ArvoAuthOrchestrator (SDLC)
-│   ├── srs_crew.py                       # SrsAuthorCrew
-│   ├── notion_publish_crew.py            # SrsNotionPublishCrew
-│   ├── notion_gap_comment_crew.py        # NotionGapCommentCrew
-│   ├── srs_meeting_update_crew.py        # SrsMeetingChangesPlanCrew + ApplyCrew
-│   ├── srs_notion_diff_apply_crew.py     # SrsNotionDiffApplyCrew
-│   ├── llm_defaults.py                   # LLM backend routing
-│   ├── claude_code_llm.py                # CrewAI BaseLLM → `claude -p`
-│   └── main.py                           # CLI entry points
-├── docs/                                 # Per-crew documentation
+│   └── engineering/                      # Namespaced per team
+│       ├── srs_workflow/
+│       ├── notion_export/
+│       ├── notion_gap_comments/
+│       └── srs_meeting_update/
+├── src/arvo_auth/
+│   ├── main.py                           # CLI entry points
+│   ├── core/                             # Shared infrastructure
+│   │   ├── llm_defaults.py               # LLM backend routing
+│   │   ├── claude_code_llm.py            # CrewAI BaseLLM → `claude -p`
+│   │   ├── crewai_react_parse_fix.py     # ReAct output parsing fix
+│   │   └── tools/                        # All shared tools (file I/O, Notion REST/MCP)
+│   └── engineering/                      # Engineering team flows
+│       ├── config/                       # agents.yaml + tasks.yaml per crew
+│       ├── knowledge/                    # Agent identity and authoring rules files
+│       ├── crew.py                       # ArvoAuthOrchestrator (SDLC)
+│       ├── srs_crew.py                   # SrsAuthorCrew
+│       ├── notion_publish_crew.py        # SrsNotionPublishCrew
+│       ├── notion_gap_comment_crew.py    # NotionGapCommentCrew
+│       ├── srs_meeting_update_crew.py    # SrsMeetingChangesPlanCrew + ApplyCrew
+│       └── srs_notion_diff_apply_crew.py # SrsNotionDiffApplyCrew
+├── docs/                                 # Documentation
 │   └── crews/
 ├── .env.example
 └── pyproject.toml

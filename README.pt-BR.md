@@ -86,7 +86,7 @@ Capacidade que um agente pode invocar durante a execução de uma tarefa. As fer
 
 ### Knowledge File (Arquivo de Identidade)
 
-Arquivo markdown injetado no backstory de um agente na inicialização (ex: `knowledge/srs_author_identity.md`). Define a identidade, restrições e estilo de tomada de decisão do agente — não é um prompt de tarefa. Alterar um knowledge file muda o comportamento do agente em todas as tarefas que ele executa.
+Arquivo markdown injetado no backstory de um agente na inicialização (ex: `engineering/knowledge/srs_author_identity.md`). Define a identidade, restrições e estilo de tomada de decisão do agente — não é um prompt de tarefa. Alterar um knowledge file muda o comportamento do agente em todas as tarefas que ele executa.
 
 ### Crew
 
@@ -112,6 +112,100 @@ Flow: Atualização SRS por Reunião
 ```
 
 Para criar um novo flow: [docs/como-criar-um-flow.md](docs/como-criar-um-flow.md)
+
+---
+
+## Organização Multi-Times
+
+O pacote é estruturado em torno de **times**. Cada time possui um diretório isolado com seus crews, configs YAML, knowledge files e outputs.
+
+```mermaid
+graph TD
+    PKG["src/arvo_auth/"]
+    CORE["core/\n(infraestrutura compartilhada)"]
+    TOOLS["core/tools/\n(todas as tools compartilhadas)"]
+    ENG["engineering/\n(time padrão)"]
+    ENGC["engineering/config/"]
+    ENGK["engineering/knowledge/"]
+    ENGO["outputs/engineering/"]
+    NEW["&lt;seu_time&gt;/\n(novo time)"]
+    NEWC["&lt;seu_time&gt;/config/"]
+    NEWK["&lt;seu_time&gt;/knowledge/"]
+    NEWO["outputs/&lt;seu_time&gt;/"]
+
+    PKG --> CORE
+    CORE --> TOOLS
+    PKG --> ENG
+    ENG --> ENGC
+    ENG --> ENGK
+    ENG -.->|"escreve em"| ENGO
+    PKG --> NEW
+    NEW --> NEWC
+    NEW --> NEWK
+    NEW -.->|"escreve em"| NEWO
+```
+
+### Criando um novo time
+
+1. Crie o diretório do time e os subdiretórios necessários:
+
+```bash
+mkdir -p src/arvo_auth/<nome_do_time>/config
+mkdir -p src/arvo_auth/<nome_do_time>/knowledge
+touch src/arvo_auth/<nome_do_time>/__init__.py
+```
+
+2. Crie os crew files dentro de `src/arvo_auth/<nome_do_time>/`, seguindo o padrão `@CrewBase` usado em `engineering/`. Configs YAML ficam em `<nome_do_time>/config/`, identity files em `<nome_do_time>/knowledge/`.
+
+3. Nomeie os artefatos de saída sob `outputs/<nome_do_time>/` para manter os outputs isolados:
+
+```python
+output_file="outputs/<nome_do_time>/meu_workflow/resultado.md"
+```
+
+4. Registre os entry points em `src/arvo_auth/main.py` e `pyproject.toml`:
+
+```python
+# main.py
+def run_meu_time_flow():
+    from arvo_auth.<nome_do_time>.meu_crew import MeuCrew
+    MeuCrew().crew().kickoff(inputs={...})
+```
+
+```toml
+# pyproject.toml
+[project.scripts]
+run_meu_time_flow = "arvo_auth.main:run_meu_time_flow"
+```
+
+### Reutilizando flows de outro time
+
+Classes de crew são Python puro — importe e use diretamente. Todas as tools em `core/tools/` estão disponíveis para todos os times.
+
+**Executar um crew existente diretamente:**
+
+```python
+from arvo_auth.engineering.srs_crew import SrsAuthorCrew
+
+SrsAuthorCrew().crew().kickoff(inputs={...})
+```
+
+**Subclassear para sobrescrever configs ou knowledge files:**
+
+```python
+from arvo_auth.engineering.srs_crew import SrsAuthorCrew
+
+class MeuTimeSrsCrew(SrsAuthorCrew):
+    agents_config = "config/meu_srs_agents.yaml"   # prompts específicos do time
+    tasks_config  = "config/meu_srs_tasks.yaml"
+```
+
+**Usar uma tool compartilhada em um novo crew:**
+
+```python
+from arvo_auth.core.tools.workflow_output_read_tool import WorkflowOutputReadTool
+from arvo_auth.core.llm_defaults import default_llm
+```
 
 ---
 
@@ -151,7 +245,7 @@ uv run run_notion_publish
 
 ```bash
 uv run run_srs_meeting_update -- /caminho/para/transcript.md
-# Após revisar outputs/srs_meeting_update/notion_changes_diff.md:
+# Após revisar outputs/engineering/srs_meeting_update/notion_changes_diff.md:
 uv run run_srs_notion_diff_apply          # só Notion
 # ou:
 uv run run_srs_meeting_update_apply       # Notion + bump de Versões
@@ -163,25 +257,29 @@ uv run run_srs_meeting_update_apply       # Notion + bump de Versões
 
 ```
 arvo_auth_orchestrator/
-├── knowledge/                            # Arquivos de identidade e regras dos agentes
 ├── outputs/                              # Artefatos em tempo de execução (gitignored)
-│   ├── srs_workflow/
-│   ├── notion_export/
-│   ├── notion_gap_comments/
-│   └── srs_meeting_update/
-├── src/arvo_auth_orchestrator/
-│   ├── config/                           # agents.yaml + tasks.yaml por crew
-│   ├── tools/                            # Ferramentas CrewAI (I/O de arquivos, Notion REST/MCP)
-│   ├── crew.py                           # ArvoAuthOrchestrator (SDLC)
-│   ├── srs_crew.py                       # SrsAuthorCrew
-│   ├── notion_publish_crew.py            # SrsNotionPublishCrew
-│   ├── notion_gap_comment_crew.py        # NotionGapCommentCrew
-│   ├── srs_meeting_update_crew.py        # SrsMeetingChangesPlanCrew + ApplyCrew
-│   ├── srs_notion_diff_apply_crew.py     # SrsNotionDiffApplyCrew
-│   ├── llm_defaults.py                   # Roteamento do LLM backend
-│   ├── claude_code_llm.py                # CrewAI BaseLLM → `claude -p`
-│   └── main.py                           # Entry points CLI
-├── docs/                                 # Documentação por crew
+│   └── engineering/                      # Namespace por time
+│       ├── srs_workflow/
+│       ├── notion_export/
+│       ├── notion_gap_comments/
+│       └── srs_meeting_update/
+├── src/arvo_auth/
+│   ├── main.py                           # Entry points CLI
+│   ├── core/                             # Infraestrutura compartilhada
+│   │   ├── llm_defaults.py               # Roteamento do LLM backend
+│   │   ├── claude_code_llm.py            # CrewAI BaseLLM → `claude -p`
+│   │   ├── crewai_react_parse_fix.py     # Correção do parser ReAct
+│   │   └── tools/                        # Todas as tools compartilhadas
+│   └── engineering/                      # Flows do time de engenharia
+│       ├── config/                       # agents.yaml + tasks.yaml por crew
+│       ├── knowledge/                    # Arquivos de identidade e regras dos agentes
+│       ├── crew.py                       # ArvoAuthOrchestrator (SDLC)
+│       ├── srs_crew.py                   # SrsAuthorCrew
+│       ├── notion_publish_crew.py        # SrsNotionPublishCrew
+│       ├── notion_gap_comment_crew.py    # NotionGapCommentCrew
+│       ├── srs_meeting_update_crew.py    # SrsMeetingChangesPlanCrew + ApplyCrew
+│       └── srs_notion_diff_apply_crew.py # SrsNotionDiffApplyCrew
+├── docs/                                 # Documentação
 │   └── crews/
 ├── .env.example
 └── pyproject.toml
