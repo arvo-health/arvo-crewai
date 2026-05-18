@@ -12,3 +12,9 @@
 | [crew-srs-notion-diff-apply.md](crews/crew-srs-notion-diff-apply.md) | `SrsNotionDiffApplyCrew` | `uv run run_srs_notion_diff_apply` |
 
 Visão geral de instalação e variáveis: [README.md](../README.md) (EN) e [README.pt-BR.md](../README.pt-BR.md) (pt-BR).
+
+## Guias
+
+| Documento | Descrição |
+| --- | --- |
+| [como-criar-um-flow.md](como-criar-um-flow.md) | Passo a passo para criar um novo flow do zero |

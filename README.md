@@ -44,6 +44,34 @@ CLI mode options: `CLAUDE_CODE_BIN`, `ARVO_CREWAI_CLAUDE_CODE_TIMEOUT_SEC`, `ARV
 
 Understanding these entities is essential to use the tool correctly.
 
+```mermaid
+graph TD
+    F["Flow\n(end-to-end goal)"]
+    C1["Crew A\n(atomic execution)"]
+    C2["Crew B\n(atomic execution)"]
+    H(["Human checkpoint\n(review artifacts)"])
+    A1["Agent"]
+    A2["Agent"]
+    T1["Task → artifact"]
+    T2["Task → artifact"]
+    TL1["Tool"]
+    TL2["Tool"]
+    K["Knowledge File\n(identity / backstory)"]
+
+    F --> C1
+    F --> H
+    H --> C2
+    C1 --> A1
+    C1 --> A2
+    A1 --> T1
+    A2 --> T2
+    T1 -->|"artifact on disk"| C2
+    A1 --> TL1
+    A2 --> TL2
+    K -->|"injected into"| A1
+    K -->|"injected into"| A2
+```
+
 ### Agent
 
 An autonomous AI unit with a defined **role**, **goal**, and **backstory** (identity). Each agent reasons independently, selects which tools to invoke, and produces an output for its assigned task. Agents do not share state directly — they communicate through task outputs.
@@ -82,6 +110,8 @@ Flow: Meeting-Driven SRS Update
   └─ [human review of diff]
   └─ Step 2: uv run run_srs_notion_diff_apply   (or run_srs_meeting_update_apply)
 ```
+
+To create a new flow: [docs/como-criar-um-flow.md](docs/como-criar-um-flow.md) *(pt-BR)*
 
 ---
 
