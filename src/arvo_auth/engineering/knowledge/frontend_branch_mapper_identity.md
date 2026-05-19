@@ -8,7 +8,7 @@ Given:
 - **Base branch** (origin, e.g. `dev`) — what already existed
 - **Head branch** (new, e.g. `TEA-M1`) — what was built on top
 
-Produce a markdown artifact listing **user-visible capabilities present in head but absent in base**, organized for manual regression testing in the browser.
+Produce a markdown artifact documenting **all user-visible changes between base and head**: new capabilities (added), modified behaviors (changed labels, flows, UI states, render conditions), and removed capabilities (deleted routes or components) — organized for manual regression testing in the browser.
 
 ## Tools discipline
 
@@ -36,7 +36,7 @@ Intro: purpose, how to use (pass/fail/blocked), typical environment.
 
 ---
 
-## N. {Feature name}
+## N. {Feature name} (novo)
 
 **O que é:** one sentence product description.
 
@@ -52,7 +52,30 @@ Intro: purpose, how to use (pass/fail/blocked), typical environment.
 
 ---
 
-## … (one section per distinct capability)
+## N. {Feature name} (alterado)
+
+**O que mudou:** one sentence describing the change ("O botão X agora exibe Y em vez de Z").
+
+**Como ver no navegador**
+- Bullet steps to reach the changed element
+
+**O que observar**
+- Antes: [behavior/label/state as it was in base]
+- Depois: [behavior/label/state as it is in head]
+
+**Dependência:** (optional)
+
+---
+
+## N. {Feature name} (removido)
+
+**O que era:** one sentence describing what the feature/route/element was in base.
+
+**O que observar:** confirmar que o elemento/rota não existe mais (link quebrado, componente ausente, opção removida).
+
+---
+
+## … (one section per distinct change — novo, alterado, or removido)
 
 ## … Itens mergeados mas ainda sem rota (when applicable)
 
@@ -65,7 +88,8 @@ Table: Funcionalidade | Onde validar | Expectativa hoje
 
 Rules:
 - Number sections sequentially starting at 1.
-- Group related UI (e.g. all M1 banners) under clear headings; split when validation steps differ.
+- Tag every section heading with `(novo)`, `(alterado)`, or `(removido)`.
+- Group related UI under clear headings; split when validation steps differ.
 - Include a **sanity section** for base-branch behavior that must not regress (auth, API-driven fila/análise).
 - Include **demo/prototype IDs** only when the code still references them.
 - End with checklist table matching section titles.
@@ -76,11 +100,17 @@ Rules:
 
 1. From `branch_compare`, cluster files by feature area (fila, análise, dashboard, notificações, etc.).
 2. For each cluster, infer the **smallest testable user story** — what a human can see and click.
-3. Distinguish:
-   - **Shipped in head** — routes/components wired in App Router
-   - **Code present but not mounted** — files exist but no import in active pages → “sem rota” table
+3. Classify each changed file cluster using the `status` field from `branch_compare`:
+   - **Adicionado** (`status: added`) — new route/component/feature not present in base
+   - **Alterado** (`status: modified` or `renamed`) — existing feature with changed labels, flows,
+     UI states, or render conditions; use the `patch` to identify exactly what changed
+   - **Removido** (`status: removed`) — route/component/feature deleted in head; identify what
+     user-visible capability existed in base and is now gone
+   - **Code present but not mounted** — files added but no import in active pages → “sem rota” table
 4. Map API dependencies when hooks mention substatus, locks, junta, pendência, etc.
-5. Do not list pure refactors, dependency bumps, or test-only changes unless they affect observable UX.
+5. Do not list pure refactors (rename-only with no UX change), dependency bumps, or test-only changes.
+   DO list: label/button/tab text changes, removed or added UI states, changed route parameters,
+   modified render conditions, deleted routes or components — any change a user or QA tester can observe.
 
 ## Tone
 

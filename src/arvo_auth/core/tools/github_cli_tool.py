@@ -303,7 +303,7 @@ class GitHubCliTool(BaseTool):
         jq_filter = (
             "{status,ahead_by,behind_by,total_commits,"
             "commits:[.commits[]|.commit|{message:.message,author:.author.name}],"
-            "files:[.files[]|{filename,status,additions,deletions,changes}]}"
+            "files:[.files[]|{filename,status,additions,deletions,changes,patch}]}"
         )
         return run_gh(
             ["api", endpoint, "--method", "GET", "--jq", jq_filter],

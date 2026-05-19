@@ -13,9 +13,13 @@ gather_github_branch_delta_task:
     Step 2 — Synthesize a technical delta report:
     - Summary: ahead_by, behind_by, total_commits, merge direction explained in one paragraph
     - Commits table: short message + author (cap at 30 most recent if many)
-    - Files changed grouped by area (app routes, components, hooks, lib, tests, config)
+    - Files changed grouped by area (app routes, components, hooks, lib, tests, config).
+      For each file include its `status` field: added, modified, removed, or renamed.
+      For modified files, include the additions/deletions count and the full `patch` content.
     - PR cross-reference: titles and how they relate to file clusters
-    - Flag files that look like dead code (new module with no route import) for step 2
+    - Flag files with status=removed that touch route files, page components, or UI copy —
+      their removal may mean a user-visible feature is gone.
+    - Flag new files (status=added) with no apparent route import as dead code for step 2.
 
     Do not read local files in this step. Do not write the final QA mapping yet.
   expected_output: >
@@ -30,20 +34,37 @@ deep_frontend_code_review_task:
     Call `read_workflow_artifact` with workflow_dir=frontend_branch_mapping and
     filename=01_github_delta.md first.
 
-    For each high-impact cluster, call `read_repo_file` with repo=frontend on representative
-    paths (routes, page components, feature entry points). Extract:
+    For each high-impact cluster, handle by the file `status` from step 1:
+
+    **Added files** — call `read_repo_file` with repo=frontend on representative paths
+    (routes, page components, feature entry points). Extract:
     - Route paths and query params
     - Visible labels (tabs, buttons, banners, dialog titles)
     - State/substatus enums and when UI renders
     - Mock/demo IDs vs API-driven flows
     - Components exported but not imported by any page (candidate "sem rota")
 
+    **Modified files** — use the `patch` content from `01_github_delta.md` to identify the
+    exact change. Then call `read_repo_file` for broader context if the patch alone is
+    ambiguous. Extract:
+    - Labels or text copy that changed (before → after)
+    - Render conditions added or removed (new if/else branches visible in patch)
+    - Route params or query strings added, removed, or renamed
+    - State/substatus enum values added or removed
+    - Any UI element whose visible behavior changed
+
+    **Removed files** — do not read (they no longer exist in head). From the filename and
+    `patch` in `01_github_delta.md`, infer what user-visible capability existed in base and
+    is now absent (deleted route, removed component, eliminated UI section).
+
     Cross-check PR bodies from step 1 when file intent is ambiguous.
 
     Output is an engineer-facing bridge document — still not the final QA guide format.
   expected_output: >
-    Markdown code review notes: per feature cluster, routes, UI copy, render conditions,
-    API dependencies, prototype vs production paths, and list of "not mounted" modules.
+    Markdown code review notes: per feature cluster annotated with change type
+    (added/modified/removed), routes, UI copy before/after for modifications, render
+    conditions, API dependencies, prototype vs production paths, and list of "not mounted"
+    modules. Removed features listed with their last-known capability description.
   agent: frontend_branch_analyst
 
 author_product_mapping_artifact_task:
@@ -54,17 +75,27 @@ author_product_mapping_artifact_task:
     (workflow_dir=frontend_branch_mapping).
 
     Consolidate the delta (step 1) and code review (step 2) into the final product
-    validation mapping. Apply the M1-mapping template: numbered feature sections
-    (O que é / Como ver / O que observar / Dependência), sem-rota table for
-    components not mounted in any route, sanity section for base-branch behaviors
-    that must not regress (auth, API-driven flows), and the quick-check checklist
-    table. Write all product-facing text in Brazilian Portuguese. No fenced code
-    blocks — use inline backticks for paths and identifiers only.
+    validation mapping. Apply the M1-mapping template with the following rules per change type:
+
+    - **(novo)** sections: use "O que é / Como ver / O que observar / Dependência".
+    - **(alterado)** sections: replace "O que é" with "O que mudou" — a one-sentence
+      description of what changed ("O botão X agora exibe Y em vez de Z"). Include
+      "Como ver" and "O que observar" with before/after expectations clearly stated.
+    - **(removido)** sections: use "O que era" (what the feature was in base) and
+      "O que observar: confirmar que o elemento/rota não existe mais".
+
+    Tag each section heading with the change type: `## N. Feature Name (novo)`,
+    `## N. Feature Name (alterado)`, or `## N. Feature Name (removido)`.
+
+    Also include: sem-rota table for components not mounted in any route, sanity section
+    for base-branch behaviors that must not regress (auth, API-driven flows), and the
+    quick-check checklist table. Write all product-facing text in Brazilian Portuguese.
+    No fenced code blocks — use inline backticks for paths and identifiers only.
 
   expected_output: >
     Complete markdown mapping document titled "{mapping_title}" following
     engineering/knowledge/frontend_branch_mapper_identity.md (M1-mapping style):
-    intro, numbered feature sections (O que é / Como ver / O que observar / Dependência),
-    optional "sem rota" table, sanity check for base-branch regressions, checklist table.
-    Brazilian Portuguese for product text. No fenced code blocks.
+    intro, numbered feature sections tagged (novo)/(alterado)/(removido) with appropriate
+    fields per type, optional "sem rota" table, sanity check for base-branch regressions,
+    checklist table. Brazilian Portuguese for product text. No fenced code blocks.
   agent: frontend_branch_analyst

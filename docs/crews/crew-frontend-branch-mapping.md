@@ -13,7 +13,11 @@
 
 ## Objetivo
 
-Comparar duas branches do **repositório frontend** (Next.js) — uma de **origem** (`base_branch`, p.ex. `dev`) e uma **nova** (`head_branch`, p.ex. `TEA-M1`) — e produzir um **guia de validação orientado a produto/QA**, no estilo de `M1-mapping.md`: funcionalidades visíveis na branch nova que não existiam na origem, com rotas, passos no navegador, expectativas de UI e dependências de API.
+Comparar duas branches do **repositório frontend** (Next.js) — uma de **origem** (`base_branch`, p.ex. `dev`) e uma **nova** (`head_branch`, p.ex. `TEA-M1`) — e produzir um **guia de validação orientado a produto/QA**, no estilo de `M1-mapping.md`, cobrindo **todas as mudanças visíveis ao utilizador**:
+
+- **(novo)** — capacidades presentes na head que não existiam na base
+- **(alterado)** — comportamentos existentes modificados (labels, fluxos, estados de UI, condições de render)
+- **(removido)** — rotas ou componentes eliminados na head que existiam na base
 
 O crew **não** substitui testes automatizados; gera um artefato para regressão manual pós-merge ou pré-release.
 
@@ -21,11 +25,15 @@ O crew **não** substitui testes automatizados; gera um artefato para regressão
 
 Um único agente (`frontend_branch_analyst`) executa **três passos**:
 
-1. **Inventário GitHub** — `github_cli_query` com `branch_compare` (`{base_branch}...{head_branch}`), listagem de PRs da head e `pr_view` quando aplicável. Saída: `outputs/engineering/frontend_branch_mapping/01_github_delta.md` (commits, ficheiros agrupados por área, notas de PR).
+1. **Inventário GitHub** — `github_cli_query` com `branch_compare` (`{base_branch}...{head_branch}`), listagem de PRs da head e `pr_view` quando aplicável. Cada ficheiro é anotado com o seu `status` (`added`, `modified`, `removed`, `renamed`); ficheiros modificados incluem o `patch` completo. Saída: `outputs/engineering/frontend_branch_mapping/01_github_delta.md`.
 
-2. **Revisão de código local** — `read_repo_file` no repo frontend para rotas (`src/app/**`), componentes e copy das áreas alteradas; distingue código montado vs módulos sem rota. Saída: `outputs/engineering/frontend_branch_mapping/02_code_analysis.md`.
+2. **Revisão de código local** — por tipo de alteração:
+   - **added**: `read_repo_file` para rotas, componentes e copy; distingue código montado vs módulos sem rota.
+   - **modified**: usa o `patch` de `01_github_delta.md` para extrair o que mudou (labels antes/depois, condições adicionadas/removidas, params alterados); `read_repo_file` para contexto adicional.
+   - **removed**: a partir do `patch`, infere a capacidade visível que deixou de existir (rota eliminada, componente removido, opção retirada).
+   Saída: `outputs/engineering/frontend_branch_mapping/02_code_analysis.md`.
 
-3. **Artefato de produto** — Consolida os passos 1–2 num documento final em português (sem blocos de código), com secções numeradas, tabela “sem rota”, sanidade da branch base e checklist. Saída: `outputs/engineering/frontend_branch_mapping/branch_mapping.md`.
+3. **Artefato de produto** — Consolida os passos 1–2 num documento final em português (sem blocos de código), com secções numeradas e etiquetadas `(novo)`, `(alterado)` ou `(removido)`, tabela “sem rota”, sanidade da branch base e checklist. Saída: `outputs/engineering/frontend_branch_mapping/branch_mapping.md`.
 
 ### Direção da comparação
 
@@ -44,9 +52,11 @@ Exemplo de referência de formato de saída (fora deste repo):
 
 | Operação | Parâmetros principais | Uso |
 | --- | --- | --- |
-| `branch_compare` | `repo`, `base_branch`, `head_branch` | Diff entre branches (ficheiros, commits, ahead/behind) |
+| `branch_compare` | `repo`, `base_branch`, `head_branch` | Diff entre branches (ficheiros com `status` + `patch`, commits, ahead/behind) |
 | `pr_list` | `repo`, `branch` = head, `state` = all | PRs associados à branch nova |
 | `pr_view` | `repo`, `number` | Título, corpo e ficheiros do PR |
+
+O campo `status` por ficheiro (`added`, `modified`, `removed`, `renamed`) e o `patch` (diff textual) são usados pelo passo 2 para classificar e interpretar cada alteração.
 
 Outras operações (`repo_view`, `api_get`, issues, Actions) existem na mesma tool mas não são obrigatórias neste fluxo.
 
@@ -150,11 +160,10 @@ flowchart TB
 Estrutura obrigatória (detalhe em `src/arvo_auth/engineering/knowledge/frontend_branch_mapper_identity.md`):
 
 1. Título e introdução (como usar, ambiente típico).
-2. Secções numeradas por capacidade de produto:
-   - **O que é**
-   - **Como ver no navegador** (paths `/fila`, `/analise?id=...`)
-   - **O que observar**
-   - **Dependência** / **Simulações** (quando aplicável)
+2. Secções numeradas por capacidade, etiquetadas com o tipo de alteração:
+   - **(novo)**: **O que é** / **Como ver no navegador** / **O que observar** / **Dependência**
+   - **(alterado)**: **O que mudou** (antes → depois) / **Como ver no navegador** / **O que observar** com before/after explícito
+   - **(removido)**: **O que era** / **O que observar** (confirmar ausência)
 3. Tabela de itens mergeados mas **sem rota** montada.
 4. Secção de **sanidade** (comportamento da branch base que não pode regredir).
 5. **Checklist rápido de regressão** (tabela Passou?).
