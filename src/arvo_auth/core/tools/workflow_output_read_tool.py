@@ -30,6 +30,13 @@ _ALLOWED_BY_DIR: dict[str, frozenset[str]] = {
             "branch_mapping.md",
         }
     ),
+    "linear_tasks_creation": frozenset(
+        {
+            "01_srs_content.md",
+            "02_issues_draft.json",
+            "03_publish_log.md",
+        }
+    ),
 }
 _MAX_BYTES = 600_000
 
@@ -46,7 +53,8 @@ class WorkflowOutputReadInput(BaseModel):
     workflow_dir: str = Field(
         default="srs_workflow",
         description=(
-            "Subfolder under outputs/engineering/: srs_workflow (default) or frontend_branch_mapping."
+            "Subfolder under outputs/engineering/: srs_workflow (default), "
+            "frontend_branch_mapping, or linear_tasks_creation."
         ),
     )
 
