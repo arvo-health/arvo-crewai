@@ -370,6 +370,87 @@ def run_srs_notion_diff_apply():
     print(f"  - diff apply log: {log_path}")
 
 
+def _frontend_mapping_output_dir() -> Path:
+    return _project_root() / "outputs" / "engineering" / "frontend_branch_mapping"
+
+
+def _default_frontend_github_repo() -> str:
+    raw = os.getenv("ARVO_FRONTEND_GITHUB_REPO", "").strip()
+    if raw:
+        return raw
+    frontend_root = os.getenv("ARVO_FRONTEND_REPO_ROOT", "").strip()
+    if frontend_root:
+        try:
+            import subprocess
+
+            from arvo_auth.core.tools.github_cli_common import gh_binary
+
+            binary = gh_binary() or "gh"
+            completed = subprocess.run(
+                [binary, "repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+                cwd=frontend_root,
+                check=False,
+            )
+            if completed.returncode == 0 and completed.stdout.strip():
+                return completed.stdout.strip()
+        except OSError:
+            pass
+    return "arvo-health/arvo-auth-frontend"
+
+
+def _build_frontend_branch_mapping_inputs() -> dict:
+    base = os.getenv("ARVO_BRANCH_BASE", "dev").strip() or "dev"
+    head = os.getenv("ARVO_BRANCH_HEAD", "").strip()
+    if not head:
+        raise Exception(
+            "Missing head branch. Set ARVO_BRANCH_HEAD to the feature branch to map "
+            "(e.g. TEA-M1)."
+        )
+    title = os.getenv("ARVO_BRANCH_MAPPING_TITLE", "").strip()
+    if not title:
+        title = f"{head}-mapping"
+    return {
+        "project_name": os.getenv("ARVO_SRS_PROJECT_NAME", "Arvo authorization"),
+        "github_repo": _default_frontend_github_repo(),
+        "base_branch": base,
+        "head_branch": head,
+        "mapping_title": title,
+        "current_year": str(datetime.now().year),
+    }
+
+
+def run_frontend_branch_mapping():
+    """Compare two frontend Git branches and write a product validation mapping (M1-mapping style)."""
+    from arvo_auth.engineering.frontend_branch_mapping_crew import FrontendBranchMappingCrew
+
+    out_dir = _frontend_mapping_output_dir()
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    inputs = _build_frontend_branch_mapping_inputs()
+    try:
+        FrontendBranchMappingCrew().crew().kickoff(inputs=inputs)
+    except Exception as e:
+        raise Exception(
+            f"An error occurred while running the frontend branch mapping crew: {e}"
+        ) from e
+
+    mapping_path = out_dir / "branch_mapping.md"
+    print("\nFrontend branch mapping finished.")
+    print(f"  - github delta:   {out_dir / '01_github_delta.md'}")
+    print(f"  - code analysis:  {out_dir / '02_code_analysis.md'}")
+    print(f"  - mapping:        {mapping_path}")
+    if mapping_path.is_file():
+        preview = mapping_path.read_text(encoding="utf-8", errors="replace")
+        if len(preview) > 5000:
+            preview = preview[:5000] + "\n\n[... preview truncated ...]\n"
+        print("\n---- Mapping preview ----")
+        print(preview)
+        print("---- end preview ----\n")
+
+
 def run_notion_gap_comments():
     """Post Notion page comments to clarify gaps/conflicts (REST API; requires API key)."""
     from arvo_auth.engineering.notion_gap_comment_crew import NotionGapCommentCrew

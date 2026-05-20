@@ -1,4 +1,4 @@
-"""Re-read intermediate SRS workflow markdown from outputs/srs_workflow/."""
+"""Re-read intermediate workflow markdown from outputs/<workflow_dir>/."""
 
 from __future__ import annotations
 
@@ -8,49 +8,70 @@ from typing import Type
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
-_ALLOWED = frozenset(
-    {
-        "step_01_ingest_memory.md",
-        "overview.md",
-        "product_research_notes.md",
-        "product.md",
-        "repo_analysis.md",
-        "backend.md",
-        "frontend.md",
-        "infra.md",
-        "gaps_and_open_questions.md",
-        "SRS.md",
-    }
-)
+_ALLOWED_BY_DIR: dict[str, frozenset[str]] = {
+    "srs_workflow": frozenset(
+        {
+            "step_01_ingest_memory.md",
+            "overview.md",
+            "product_research_notes.md",
+            "product.md",
+            "repo_analysis.md",
+            "backend.md",
+            "frontend.md",
+            "infra.md",
+            "gaps_and_open_questions.md",
+            "SRS.md",
+        }
+    ),
+    "frontend_branch_mapping": frozenset(
+        {
+            "01_github_delta.md",
+            "02_code_analysis.md",
+            "branch_mapping.md",
+        }
+    ),
+}
 _MAX_BYTES = 600_000
 
 
-def _workflow_dir() -> Path:
-    return Path(__file__).resolve().parents[4] / "outputs" / "engineering" / "srs_workflow"
+def _outputs_root() -> Path:
+    return Path(__file__).resolve().parents[4] / "outputs" / "engineering"
 
 
 class WorkflowOutputReadInput(BaseModel):
     filename: str = Field(
         ...,
-        description="Artifact name under outputs/srs_workflow/, e.g. overview.md or product.md",
+        description="Artifact file name only (e.g. overview.md or 01_github_delta.md).",
+    )
+    workflow_dir: str = Field(
+        default="srs_workflow",
+        description=(
+            "Subfolder under outputs/engineering/: srs_workflow (default) or frontend_branch_mapping."
+        ),
     )
 
 
 class WorkflowOutputReadTool(BaseTool):
     name: str = "read_workflow_artifact"
     description: str = (
-        "Load a previously written workflow markdown file from outputs/srs_workflow/. "
-        "Use between workflow steps to read the prior step output from outputs/srs_workflow/, "
-        "or during final SRS authoring when you need the full artifact text."
+        "Load a markdown artifact from outputs/engineering/. Use workflow_dir=srs_workflow for SRS "
+        "steps, or workflow_dir=frontend_branch_mapping for 01_github_delta.md, "
+        "02_code_analysis.md, and branch_mapping.md."
     )
     args_schema: Type[BaseModel] = WorkflowOutputReadInput
 
-    def _run(self, filename: str) -> str:
-        name = filename.strip()
-        if name not in _ALLOWED:
-            return f"Unknown artifact. Allowed: {', '.join(sorted(_ALLOWED))}"
+    def _run(self, filename: str, workflow_dir: str = "srs_workflow") -> str:
+        subdir = workflow_dir.strip() or "srs_workflow"
+        allowed = _ALLOWED_BY_DIR.get(subdir)
+        if not allowed:
+            known = ", ".join(sorted(_ALLOWED_BY_DIR))
+            return f"Unknown workflow_dir {workflow_dir!r}. Use one of: {known}"
 
-        path = _workflow_dir() / name
+        name = filename.strip()
+        if name not in allowed:
+            return f"Unknown artifact for {subdir}. Allowed: {', '.join(sorted(allowed))}"
+
+        path = _outputs_root() / subdir / name
         if not path.is_file():
             return f"File not found yet: {path}. Run earlier workflow steps first."
 
