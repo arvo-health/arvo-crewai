@@ -451,6 +451,60 @@ def run_frontend_branch_mapping():
         print("---- end preview ----\n")
 
 
+def _linear_tasks_output_dir() -> Path:
+    return _project_root() / "outputs" / "engineering" / "linear_tasks_creation"
+
+
+def _build_linear_tasks_inputs() -> dict:
+    page_id = os.getenv("ARVO_SRS_NOTION_PAGE_ID", "").strip()
+    if not page_id:
+        raise Exception(
+            "Missing SRS Notion page ID. Set ARVO_SRS_NOTION_PAGE_ID to the UUID of the "
+            "SRS Notion page (32 hex chars, with or without dashes)."
+        )
+    team_key = os.getenv("ARVO_LINEAR_TEAM_KEY", "").strip()
+    if not team_key:
+        raise Exception(
+            "Missing Linear team key. Set ARVO_LINEAR_TEAM_KEY to the team key in Linear "
+            "(e.g. NEW, TEA)."
+        )
+    return {
+        "project_name": os.getenv("ARVO_SRS_PROJECT_NAME", "Arvo authorization"),
+        "srs_notion_page_id": page_id,
+        "linear_team_key": team_key,
+        "current_year": str(datetime.now().year),
+    }
+
+
+def run_linear_tasks():
+    """Decompose a SRS Notion page into Linear issues (Issue Pai + sub-issues per layer)."""
+    from arvo_auth.engineering.linear_tasks_crew import LinearTasksCreationCrew
+
+    out_dir = _linear_tasks_output_dir()
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    inputs = _build_linear_tasks_inputs()
+    try:
+        LinearTasksCreationCrew().crew().kickoff(inputs=inputs)
+    except Exception as e:
+        raise Exception(
+            f"An error occurred while running the linear tasks crew: {e}"
+        ) from e
+
+    log_path = out_dir / "03_publish_log.md"
+    print("\nLinear tasks creation finished.")
+    print(f"  - srs content:    {out_dir / '01_srs_content.md'}")
+    print(f"  - issues draft:   {out_dir / '02_issues_draft.json'}")
+    print(f"  - publish log:    {log_path}")
+    if log_path.is_file():
+        preview = log_path.read_text(encoding="utf-8", errors="replace")
+        if len(preview) > 3000:
+            preview = preview[:3000] + "\n\n[... preview truncated ...]\n"
+        print("\n---- Publish log preview ----")
+        print(preview)
+        print("---- end preview ----\n")
+
+
 def run_notion_gap_comments():
     """Post Notion page comments to clarify gaps/conflicts (REST API; requires API key)."""
     from arvo_auth.engineering.notion_gap_comment_crew import NotionGapCommentCrew

@@ -1,0 +1,103 @@
+read_srs_task:
+  description: >
+    Project: {project_name}. SRS Notion page ID: {srs_notion_page_id}. Year: {current_year}.
+
+    Step 1 — Fetch the full SRS from Notion:
+    Call `fetch_notion_page_text` with page_id={srs_notion_page_id}.
+    If the content references linked child pages that contain requirements, call the tool
+    again for each relevant child page ID and append the content.
+
+    Step 2 — Produce the structured output:
+    Write a markdown document with:
+    - Header: "# SRS Content — {project_name}" + date + total block count (approximate).
+    - The full SRS content verbatim: preserve all headings, lists, tables, and requirement
+      identifiers (RF-, RNF-, REQ-) exactly as they appear in Notion.
+    - Footer section "## Módulos Identificados" with a bullet list of each top-level
+      functional module or feature area found in the SRS.
+
+    Do NOT decompose into issues in this step. Do NOT call Linear tools.
+  expected_output: >
+    Markdown document with the complete SRS content (requirement identifiers preserved),
+    followed by a "## Módulos Identificados" section listing each top-level module.
+  agent: srs_issue_architect
+
+decompose_srs_task:
+  description: >
+    Step 2 — Decompose SRS into Linear issues. Team: {linear_team_key}.
+
+    First: call `read_workflow_artifact` with workflow_dir=linear_tasks_creation,
+    filename=01_srs_content.md to load the full SRS.
+
+    Then apply the complete decomposition methodology from your identity:
+    1. Identify each macro feature → one Issue Pai (labels: ["Feature", "Modulo-<Name>"]).
+    2. For each Issue Pai derive sub-issues by layer (Backend, Frontend, Infraestrutura).
+       Omit a layer when it has no work. Do not invent work.
+    3. Assign Fibonacci estimates (2–5) to every sub-issue. If a sub-issue needs >5, break it.
+    4. Write full descriptions using the Issue Pai template (Contexto de negócio, Fluxo
+       funcional, Regras de negócio, Critérios de aceite, Referência no SRS, Sub-issues list)
+       and the Sub-issue template (Objetivo, Contexto mínimo, Contrato de API, Regras
+       técnicas, Critérios de aceite, Fora de escopo, Referência no SRS).
+    5. Define the full API contract in each Backend sub-issue; copy it verbatim to the
+       corresponding Frontend sub-issue description.
+    6. Map blockedBy dependencies using tempId references (Frontend blocked by Backend,
+       Backend blocked by Infra, Issue Pai blocked by another Pai when functionally required).
+    7. Verify coverage: every RF-, RNF-, REQ- identifier from the SRS appears in at least
+       one sub-issue description. Mark ambiguous requirements with "> ⚠️ AMBÍGUO NO SRS:".
+    8. Sort topologically: issues with no dependencies first; Issue Pai before its sub-issues;
+       blockers before the issues they block.
+
+    Output format (STRICT):
+    - Pure JSON array. No markdown code fences. No explanation text before or after.
+    - The entire task output must be parseable by json.loads() directly.
+    - Each element fields: tempId (string), title (string), team (="{linear_team_key}"),
+      labels (array of strings), priority (int), estimate (int, omit for Issue Pai),
+      parentId (null for Pai or tempId string for sub-issues), blockedBy (array of tempId
+      strings, empty array if none), description (full markdown string with escaped newlines).
+    - All tempId values in parentId/blockedBy must exist as tempId entries in the array.
+  expected_output: >
+    Pure JSON array (no fencing) sorted topologically. Each issue object has: tempId, title,
+    team="{linear_team_key}", labels, priority, estimate (sub-issues only), parentId,
+    blockedBy, description. No estimate exceeds 5. Every SRS requirement is referenced in
+    at least one description. All parentId/blockedBy tempId cross-references are valid.
+  agent: srs_issue_architect
+
+publish_linear_issues_task:
+  description: >
+    Step 3 — Create all issues in Linear. Team: {linear_team_key}.
+
+    First: call `read_workflow_artifact` with workflow_dir=linear_tasks_creation,
+    filename=02_issues_draft.json to load the issue list.
+    Parse the JSON array (strip any ```json fencing if present before parsing).
+
+    Pre-flight check:
+    Call `linear_issue_manager` with operation=get_team, team_key={linear_team_key}.
+    If the team is not found, stop immediately and report the error.
+
+    Maintain a tempId → realId map (starts empty, grows as issues are created).
+
+    For each issue in array order (already topologically sorted):
+    a. Resolve parentId: if non-null, look up the tempId in your map to get the real
+       Linear ID. If null, use empty string for parent_id.
+    b. Resolve blockedBy: replace each tempId with its real ID from the map.
+       If a tempId is unexpectedly absent from the map, log it as an error and skip
+       that relation — do not abort the run.
+    c. Call `linear_issue_manager` with:
+       - operation=create_issue
+       - team_key={linear_team_key}
+       - title = issue title from JSON
+       - description = full verbatim description from JSON (do not truncate)
+       - labels = labels array from JSON
+       - priority = priority integer from JSON (0 if absent)
+       - estimate = estimate integer from JSON (0 if absent or Issue Pai)
+       - parent_id = resolved real Linear ID string (empty string if no parent)
+       - blocked_by = list of resolved real Linear ID strings (empty list if none)
+    d. If the tool returns a Linear ID (e.g. TEA-42), record tempId → TEA-42 in the map.
+    e. If the tool returns an ERROR, log it and continue with the next issue.
+
+    After all issues are processed, produce the creation log.
+  expected_output: >
+    Markdown creation log with:
+    - Summary: "N/M issues created successfully."
+    - Table mapping tempId → real Linear ID → title → status (✅ or ❌).
+    - Errors section (if any) listing tempId, title, and error message.
+  agent: linear_publisher
