@@ -13,6 +13,7 @@
 | [crew-srs-meeting-update.md](crews/crew-srs-meeting-update.md) | `SrsMeetingChangesPlanCrew` (+ opcional `SrsMeetingChangesApplyCrew`) | `uv run run_srs_meeting_update` · `uv run run_srs_meeting_update_apply` |
 | [crew-srs-notion-diff-apply.md](crews/crew-srs-notion-diff-apply.md) | `SrsNotionDiffApplyCrew` | `uv run run_srs_notion_diff_apply` |
 | [crew-frontend-branch-mapping.md](crews/crew-frontend-branch-mapping.md) | `FrontendBranchMappingCrew` | `uv run run_frontend_branch_mapping` |
+| [crew-service-handover.md](crews/crew-service-handover.md) | `ServiceHandoverCrew` | `uv run run_service_handover` |
 
 ## Time de data science
 

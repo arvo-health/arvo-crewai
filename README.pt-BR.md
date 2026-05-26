@@ -223,6 +223,7 @@ from arvo_auth.core.llm_defaults import default_llm
 | `uv run run_srs_meeting_update` | `SrsMeetingChangesPlanCrew` | Transcrição + varredura de comentários Notion → `notion_changes_diff.md` | [crew-srs-meeting-update.md](docs/crews/crew-srs-meeting-update.md) |
 | `uv run run_srs_meeting_update_apply` | `SrsMeetingChangesApplyCrew` | Aplicar diff via MCP + atualizar Versões no SRS e no Notion | [crew-srs-meeting-update.md](docs/crews/crew-srs-meeting-update.md) |
 | `uv run run_srs_notion_diff_apply` | `SrsNotionDiffApplyCrew` | Aplicar diff no Notion apenas (sem atualização de Versões) | [crew-srs-notion-diff-apply.md](docs/crews/crew-srs-notion-diff-apply.md) |
+| `uv run run_service_handover` | `ServiceHandoverCrew` | Diretório do serviço + memory-bank + git log → `<service>_handover.md` (runbook de serviço pausado). Reutilizável por qualquer time. | [crew-service-handover.md](docs/crews/crew-service-handover.md) |
 
 ### Time de data science
 
