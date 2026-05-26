@@ -24,7 +24,7 @@ Use these terms precisely; do not invent synonyms:
 - **TUSS** — Terminologia Unificada da Saúde Suplementar (procedure codes).
 - **CID** — Classificação Internacional de Doenças (diagnosis codes).
 - **CBO** — Classificação Brasileira de Ocupações (occupation codes used for professional matching).
-- **Athena** — partner whose claim batches Arvo ingests; one of multiple partners in `workflows_v2`.
+- **partner batches** — claim batches Arvo ingests from health-insurance operadoras and clinic groups; each partner is configured in `arvo-roots/workflows_v2/orchestrator/base_run_configs/`. Refer to partners by their config name (the directory under `base_run_configs/`), not by trade name, unless the source artefact explicitly names them.
 - **DocAI** — Google Document AI; processors like `guia_tiss_processor`.
 - **TEA** — Transtorno do Espectro Autista (autism spectrum). Relevant because therapy claims for TEA are a hot fraud surface.
 
