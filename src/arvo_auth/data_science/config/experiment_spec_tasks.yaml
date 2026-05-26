@@ -1,0 +1,135 @@
+map_source_context_task:
+  description: >
+    Project: {project_name}. Phase: {phase_name}. Year: {current_year}.
+
+    Step 1 — Produce source_context.md by reading two kinds of input:
+
+    (a) The discovery artefact at {input_pdf_path}. Use the read_presentation tool to
+        extract its text and describe every image, signature, chart, or diagram it
+        contains. Be literal and exhaustive — downstream agents cannot see the file.
+
+    (b) The current state of the Arvo intelligence ecosystem. Use the read_repo_file
+        tool against these logical repos (configured via ARVO_REPO_* env vars):
+          - repo="intelligence"  → arvo-auth-intelligence (FastAPI doc-extraction services)
+          - repo="tea_analyzer"  → tea-image-analyzer (production OCR + TISS pipeline)
+          - repo="roots"         → arvo-roots (Vertex AI pipeline + workflows_v2)
+
+        Suggested paths to read (adjust as you discover the structure):
+          - intelligence: README.md, services/doc-extractor/README.md,
+            services/doc-extractor/src/app/main.py
+          - tea_analyzer: README.md, services/guia-tiss-service/README.md,
+            services/guia-tiss-service/rules/base/base_v1/ (signature handling)
+          - roots: new_ventures/analise_imagens_tea_athena/vertexai_pipeline_parallel/README.md,
+            workflows_v2/filters/athena.py
+
+    Additional briefing (optional):
+    ---
+    {briefing_markdown}
+    ---
+
+    Your output MUST contain these sections, populated from your reads only:
+
+      ## Manual Analysis Findings
+        Enumerate every signal the discovery artefact identifies (do not group). For each:
+        what it is, how it was observed, where in the artefact it appears.
+
+      ## Business Numbers (verbatim)
+        Reproduce every numeric finding from the artefact exactly. Sample size, fraud
+        counts, R$ savings, sessions, dates, etc. No rounding, no paraphrase.
+
+      ## Current Pipeline State
+        Describe the production data flow today across the three repos. Cite the files
+        you read. State what the pipeline DOES cover and what it does NOT.
+
+      ## Candidate Integration Points
+        Based on the pipeline state, list 2–4 places where the new capability could
+        plug in. For each: brief description, what would change. Do NOT recommend one
+        yet — the experiment_designer will choose.
+
+      ## Source References
+        Every file path you read, with a one-line note on what you got from it.
+
+  expected_output: >
+    Dense markdown saved to outputs/data_science/experiment_spec/source_context.md
+    containing the five sections above. Source-cited, no invented facts. Numbers
+    preserved verbatim from the discovery artefact.
+  agent: source_analyst
+
+design_experiment_task:
+  description: >
+    Step 2 — Call read_workflow_artifact("data_science/experiment_spec/source_context.md")
+    first; everything you write must be grounded in that file. Call
+    read_briefing_markdown("experiment_authoring_rules.md") for the authoring conventions.
+
+    Produce experiment_design.md proposing the offline validation plan for the capability
+    identified in source_context.md.
+
+    Your output MUST contain these sections:
+
+      ## Hypothesis
+        One primary, falsifiable statement. Paired with the metric that would refute it.
+
+      ## Prior Art
+        Relevant literature, libraries, or public datasets (e.g. signature verification,
+        writer verification, Siamese networks for image similarity). At least one
+        reference per non-trivial technique.
+
+      ## Data Requirements
+        Source of data, volume needed (train/val/test), how labels are obtained, label
+        quality expectations, privacy considerations (LGPD if applicable).
+
+      ## Methods to Compare
+        - Baseline (often classical features or a rule).
+        - Primary method (your proposal).
+        - Optional ablations or alternatives.
+        For each: short description + what would make it the chosen approach.
+
+      ## Evaluation Plan
+        Primary metric with a numeric target threshold. Secondary metrics. Evaluation
+        set construction. Statistical significance plan. Failure modes to inspect.
+
+      ## Risks (technical & data)
+        Enumerate technical and data risks (false positives on family signatures, sample
+        bias, label noise, distribution shift). For each: likelihood, impact, mitigation.
+
+    Do NOT propose production architecture, schema changes, or migration plans — that is
+    the SolutionArchitectureCrew's responsibility. Stay in research mode.
+
+  expected_output: >
+    Dense markdown saved to outputs/data_science/experiment_spec/experiment_design.md
+    containing the six sections above. Hypotheses falsifiable. Metrics numeric. Methods
+    cited.
+  agent: experiment_designer
+
+author_experiment_spec_task:
+  description: >
+    Step 3 — Author experiment_spec.md for phase {phase_name} of project {project_name}.
+    Year: {current_year}.
+
+    You MUST call read_workflow_artifact for both of these files before writing:
+      - data_science/experiment_spec/source_context.md
+      - data_science/experiment_spec/experiment_design.md
+
+    You MUST also call read_briefing_markdown("experiment_authoring_rules.md") for the
+    mandatory section structure.
+
+    Supplementary organizational rules (optional; do not contradict the identity loaded
+    in your backstory):
+    ---
+    {experiment_authoring_rules}
+    ---
+
+    Synthesise the two prior artefacts into the final document following the section
+    structure mandated by experiment_authoring_rules.md. Preserve every business number
+    verbatim. Cite source references in the Appendix.
+
+    Do NOT introduce facts that are absent from the two prior artefacts. The role of
+    this step is editorial consolidation, not new research.
+
+    Output path: outputs/data_science/experiment_spec/experiment_spec.md.
+
+  expected_output: >
+    Complete experiment_spec.md following the mandatory section structure in
+    experiment_authoring_rules.md (sections 1–14). All business numbers preserved
+    verbatim. Source references appendix complete. Open questions enumerated.
+  agent: spec_author
