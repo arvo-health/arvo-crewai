@@ -451,6 +451,133 @@ def run_frontend_branch_mapping():
         print("---- end preview ----\n")
 
 
+def _service_slug_for_handover(service_path: str) -> str:
+    slug = service_path.strip().strip("/").replace("/", "__").replace(" ", "_")
+    return slug or "default"
+
+
+def _handover_output_dir() -> Path:
+    raw = os.getenv("ARVO_HANDOVER_OUTPUT_DIR", "").strip()
+    if raw:
+        return Path(raw).expanduser().resolve()
+    slug = _service_slug_for_handover(os.getenv("ARVO_HANDOVER_SERVICE", "default"))
+    return _project_root() / "outputs" / "engineering" / "service_handover" / slug
+
+
+def _build_handover_inputs() -> dict:
+    """Inputs for `ServiceHandoverCrew` (engineering team)."""
+    rules_name = os.getenv(
+        "ARVO_HANDOVER_RULES_FILE", "handover_authoring_rules.md"
+    ).strip()
+    rules_path = (
+        Path(__file__).parent / "engineering" / "knowledge" / rules_name
+    )
+    rules_text = (
+        rules_path.read_text(encoding="utf-8")
+        if rules_path.is_file()
+        else f"(missing rules file at engineering/knowledge/{rules_name})"
+    )
+
+    repo_name = os.getenv("ARVO_HANDOVER_REPO", "").strip()
+    if not repo_name:
+        raise Exception(
+            "Missing handover repo. Set ARVO_HANDOVER_REPO to the logical repo "
+            "name (e.g. 'intelligence') or pass it as the first CLI argument."
+        )
+
+    service_path = os.getenv("ARVO_HANDOVER_SERVICE", "").strip()
+    if not service_path:
+        raise Exception(
+            "Missing handover service path. Set ARVO_HANDOVER_SERVICE to the "
+            "sub-path inside the repo (e.g. 'services/doc-quality') or pass it "
+            "as the second CLI argument."
+        )
+
+    briefing = os.getenv("ARVO_HANDOVER_BRIEFING_MARKDOWN", "").strip()
+    if not briefing:
+        briefing = "(no extra briefing provided)"
+
+    status_hint = os.getenv("ARVO_HANDOVER_STATUS_HINT", "").strip()
+    if not status_hint:
+        status_hint = "(none — infer from source signals)"
+
+    backlog_raw = os.getenv("ARVO_HANDOVER_BACKLOG_FILE", "").strip()
+    if backlog_raw:
+        bp = Path(backlog_raw).expanduser()
+        bp = bp.resolve() if bp.is_absolute() else (_project_root() / bp).resolve()
+        if bp.is_file():
+            text = bp.read_text(encoding="utf-8", errors="replace")
+            if len(text) > 80_000:
+                text = text[:80_000] + "\n\n[... backlog file truncated at 80KB ...]"
+            backlog_content = text
+        else:
+            backlog_content = f"(ARVO_HANDOVER_BACKLOG_FILE set to {bp} but file not found)"
+    else:
+        backlog_content = (
+            "(no external backlog provided — Section 9 should rely on in-code signals only)"
+        )
+
+    return {
+        "project_name": os.getenv("ARVO_HANDOVER_PROJECT_NAME", repo_name),
+        "repo_name": repo_name,
+        "service_path": service_path,
+        "status_hint": status_hint,
+        "current_year": str(datetime.now().year),
+        "briefing_markdown": briefing,
+        "backlog_content": backlog_content,
+        "handover_authoring_rules": rules_text,
+    }
+
+
+def run_service_handover():
+    """Generate a handover document for a single service in a configured repo.
+
+    For paused/legacy services. Reads the service directory, memory-bank,
+    git log, deploy configs, and optionally cross-repo consumer references.
+    Produces three artefacts under outputs/engineering/service_handover/<slug>/:
+      - state.md (factual inventory)
+      - operations.md (operational chronicle)
+      - <slug>_handover.md (final survival-guide document)
+
+    Required env: ARVO_HANDOVER_REPO, ARVO_HANDOVER_SERVICE
+      (also accepted positionally: `uv run run_service_handover -- <repo> <service>`)
+
+    Recommended env: ARVO_HANDOVER_PROJECT_NAME, ARVO_HANDOVER_STATUS_HINT.
+    """
+    from arvo_auth.engineering.service_handover_crew import ServiceHandoverCrew
+
+    # Allow positional CLI args: repo, then service path.
+    positional: list[str] = []
+    for arg in sys.argv[1:]:
+        s = arg.strip()
+        if not s or s == "--":
+            continue
+        positional.append(s)
+    if positional:
+        if not os.getenv("ARVO_HANDOVER_REPO", "").strip():
+            os.environ["ARVO_HANDOVER_REPO"] = positional[0]
+        if len(positional) > 1 and not os.getenv("ARVO_HANDOVER_SERVICE", "").strip():
+            os.environ["ARVO_HANDOVER_SERVICE"] = positional[1]
+
+    out_dir = _handover_output_dir()
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    inputs = _build_handover_inputs()
+    try:
+        ServiceHandoverCrew().crew().kickoff(inputs=inputs)
+    except Exception as e:
+        raise Exception(
+            f"An error occurred while running the service handover crew: {e}"
+        ) from e
+
+    slug = _service_slug_for_handover(inputs["service_path"])
+    handover_path = out_dir / f"{slug}_handover.md"
+    print("\nService handover finished.")
+    print(f"  - state:     {out_dir / 'state.md'}")
+    print(f"  - operations:{out_dir / 'operations.md'}")
+    print(f"  - handover:  {handover_path}")
+
+
 def _build_ds_experiment_spec_inputs() -> dict:
     """Inputs for `ExperimentSpecCrew` (data_science team)."""
     rules_name = os.getenv(
