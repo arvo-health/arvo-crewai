@@ -1,6 +1,8 @@
 # Crew: sincronização com Linear (`LinearSyncCrew`)
 
-> **Status:** `PLANNED` — design v1, implementação pendente. Primeira integração real com Linear no repo: nenhum outro time tem isso hoje. Será construído depois do `ExperimentSpecCrew` validar em prática.
+> **Status:** `PLANNED` — design v1, implementação pendente. Será construído depois do `ExperimentSpecCrew` validar em prática.
+>
+> **Atualização (2026-05-26):** engineering tem `LinearTasksCreationCrew` em construção em `origin/feat/linear-tasks-creation` (não mergeado ainda). Quando mergear, este design deve ser **revisitado** para: (a) verificar se a tool de delegação (provavelmente `LinearClaudeDelegate` ou equivalente) já está em `core/tools/` e pode ser reutilizada direto; (b) divergir só onde DS tem necessidade diferente (granularidade de tickets, labels, schema do `task_breakdown.md`); (c) avaliar se vale fundir as duas implementações ou manter dois crews paralelos (`LinearTasksCreationCrew` para engineering ↔ `LinearSyncCrew` para DS).
 
 ## Identificação
 
