@@ -1,6 +1,8 @@
 # Documentação do Arvo Auth CrewAI
 
-Índice da documentação por **crew** (CrewAI):
+Índice da documentação por **crew** (CrewAI), agrupada por time.
+
+## Time de engenharia
 
 | Documento | Crew | Comando típico |
 | --- | --- | --- |
@@ -11,6 +13,14 @@
 | [crew-srs-meeting-update.md](crews/crew-srs-meeting-update.md) | `SrsMeetingChangesPlanCrew` (+ opcional `SrsMeetingChangesApplyCrew`) | `uv run run_srs_meeting_update` · `uv run run_srs_meeting_update_apply` |
 | [crew-srs-notion-diff-apply.md](crews/crew-srs-notion-diff-apply.md) | `SrsNotionDiffApplyCrew` | `uv run run_srs_notion_diff_apply` |
 | [crew-frontend-branch-mapping.md](crews/crew-frontend-branch-mapping.md) | `FrontendBranchMappingCrew` | `uv run run_frontend_branch_mapping` |
+
+## Time de data science
+
+| Documento | Crew | Status | Comando típico |
+| --- | --- | --- | --- |
+| [crew-ds-experiment-spec.md](crews/crew-ds-experiment-spec.md) | `ExperimentSpecCrew` | Implementado | `uv run ds_run_experiment_spec` |
+| [crew-ds-solution-architecture.md](crews/crew-ds-solution-architecture.md) | `SolutionArchitectureCrew` | Planejado | _(futuro)_ `uv run ds_run_solution_architecture` |
+| [crew-ds-linear-sync.md](crews/crew-ds-linear-sync.md) | `LinearSyncCrew` | Planejado | _(futuro)_ `uv run ds_run_linear_sync` |
 
 Visão geral de instalação e variáveis: [README.md](../README.md) (EN) e [README.pt-BR.md](../README.pt-BR.md) (pt-BR).
 

@@ -211,6 +211,8 @@ from arvo_auth.core.llm_defaults import default_llm
 
 ## Crews
 
+### Time de engenharia
+
 | Comando | Crew | Finalidade | Docs |
 | --- | --- | --- | --- |
 | `crewai run` | `ArvoAuthOrchestrator` | Pipeline SDLC: planejamento → prontidão para manutenção | [crew-sdlc-pipeline.md](docs/crews/crew-sdlc-pipeline.md) |
@@ -221,6 +223,14 @@ from arvo_auth.core.llm_defaults import default_llm
 | `uv run run_srs_meeting_update` | `SrsMeetingChangesPlanCrew` | Transcrição + varredura de comentários Notion → `notion_changes_diff.md` | [crew-srs-meeting-update.md](docs/crews/crew-srs-meeting-update.md) |
 | `uv run run_srs_meeting_update_apply` | `SrsMeetingChangesApplyCrew` | Aplicar diff via MCP + atualizar Versões no SRS e no Notion | [crew-srs-meeting-update.md](docs/crews/crew-srs-meeting-update.md) |
 | `uv run run_srs_notion_diff_apply` | `SrsNotionDiffApplyCrew` | Aplicar diff no Notion apenas (sem atualização de Versões) | [crew-srs-notion-diff-apply.md](docs/crews/crew-srs-notion-diff-apply.md) |
+
+### Time de data science
+
+| Comando | Crew | Finalidade | Docs |
+| --- | --- | --- | --- |
+| `uv run ds_run_experiment_spec` | `ExperimentSpecCrew` | PDF de descoberta + repos Arvo → `experiment_spec.md` | [crew-ds-experiment-spec.md](docs/crews/crew-ds-experiment-spec.md) |
+| _(planejado)_ `uv run ds_run_solution_architecture` | `SolutionArchitectureCrew` | `experiment_spec.md` validado → `solution_architecture.md` (desenho de produção) | [crew-ds-solution-architecture.md](docs/crews/crew-ds-solution-architecture.md) |
+| _(planejado)_ `uv run ds_run_linear_sync` | `LinearSyncCrew` | Qualquer spec em markdown → issues granulares no Linear via MCP | [crew-ds-linear-sync.md](docs/crews/crew-ds-linear-sync.md) |
 
 Documentação detalhada por crew (agentes, artefatos, variáveis, fluxos Mermaid): [docs/README.md](docs/README.md).
 
