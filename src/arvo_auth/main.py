@@ -451,6 +451,82 @@ def run_frontend_branch_mapping():
         print("---- end preview ----\n")
 
 
+def _build_ds_experiment_spec_inputs() -> dict:
+    """Inputs for `ExperimentSpecCrew` (data_science team)."""
+    rules_name = os.getenv(
+        "ARVO_DS_RULES_FILE", "experiment_authoring_rules.md"
+    ).strip()
+    rules_path = (
+        Path(__file__).parent / "data_science" / "knowledge" / rules_name
+    )
+    rules_text = (
+        rules_path.read_text(encoding="utf-8")
+        if rules_path.is_file()
+        else f"(missing rules file at data_science/knowledge/{rules_name})"
+    )
+
+    input_pdf_raw = os.getenv("ARVO_DS_INPUT_PDF", "").strip()
+    if input_pdf_raw:
+        p = Path(input_pdf_raw).expanduser()
+        input_pdf = p.resolve() if p.is_absolute() else (_project_root() / p).resolve()
+        input_pdf_path = str(input_pdf)
+    else:
+        input_pdf_path = (
+            "(Set ARVO_DS_INPUT_PDF to the absolute path of the discovery PDF/PNG.)"
+        )
+
+    briefing = os.getenv("ARVO_DS_BRIEFING_MARKDOWN", "").strip()
+    if not briefing:
+        briefing = "(no extra briefing provided)"
+
+    return {
+        "project_name": os.getenv("ARVO_DS_PROJECT_NAME", "data-science experiment"),
+        "phase_name": os.getenv("ARVO_DS_PHASE", "poc"),
+        "current_year": str(datetime.now().year),
+        "input_pdf_path": input_pdf_path,
+        "briefing_markdown": briefing,
+        "experiment_authoring_rules": rules_text,
+    }
+
+
+def run_ds_experiment_spec():
+    """Generate an experiment specification (data_science team).
+
+    Reads a discovery artefact (PDF/PNG) and the configured Arvo repos, then produces
+    three artefacts under `outputs/data_science/experiment_spec/`:
+      - source_context.md (state of the world)
+      - experiment_design.md (research plan)
+      - experiment_spec.md (final stakeholder-ready document)
+
+    Required env: ARVO_DS_INPUT_PDF (or first CLI argument).
+    Recommended env: ARVO_DS_PROJECT_NAME, ARVO_DS_PHASE,
+    ARVO_REPO_INTELLIGENCE, ARVO_REPO_TEA_ANALYZER, ARVO_REPO_ROOTS.
+    """
+    from arvo_auth.data_science.experiment_spec_crew import ExperimentSpecCrew
+
+    # Allow passing the PDF path as the first CLI argument for ergonomics.
+    if not os.getenv("ARVO_DS_INPUT_PDF", "").strip() and len(sys.argv) > 1:
+        for arg in sys.argv[1:]:
+            s = arg.strip()
+            if not s or s == "--":
+                continue
+            os.environ["ARVO_DS_INPUT_PDF"] = s
+            break
+
+    root = _project_root()
+    (root / "outputs" / "data_science" / "experiment_spec").mkdir(
+        parents=True, exist_ok=True
+    )
+
+    inputs = _build_ds_experiment_spec_inputs()
+    try:
+        ExperimentSpecCrew().crew().kickoff(inputs=inputs)
+    except Exception as e:
+        raise Exception(
+            f"An error occurred while running the DS experiment spec crew: {e}"
+        ) from e
+
+
 def run_notion_gap_comments():
     """Post Notion page comments to clarify gaps/conflicts (REST API; requires API key)."""
     from arvo_auth.engineering.notion_gap_comment_crew import NotionGapCommentCrew

@@ -23,6 +23,7 @@ run_srs_meeting_update = "arvo_auth.main:run_srs_meeting_update"
 run_srs_meeting_update_apply = "arvo_auth.main:run_srs_meeting_update_apply"
 run_srs_notion_diff_apply = "arvo_auth.main:run_srs_notion_diff_apply"
 run_frontend_branch_mapping = "arvo_auth.main:run_frontend_branch_mapping"
+ds_run_experiment_spec = "arvo_auth.main:run_ds_experiment_spec"
 
 [build-system]
 requires = ["hatchling"]
