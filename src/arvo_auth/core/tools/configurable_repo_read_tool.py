@@ -52,12 +52,14 @@ class ConfigurableRepoReadInput(BaseModel):
 
 
 class ConfigurableRepoReadTool(BaseTool):
-    name: str = "read_repo_file"
+    name: str = "read_configured_repo_file"
     description: str = (
         "Read a text file from a repository configured via env vars. The repo is "
         "identified by a logical name; its absolute path comes from ARVO_REPO_<NAME>. "
         "Useful when an agent needs to inspect multiple sibling repositories (services, "
-        "pipelines, downstream workflows) without hard-coding paths."
+        "pipelines, downstream workflows) without hard-coding paths. (Distinct from the "
+        "engineering RepoReadTool's read_repo_file, which is hard-coded to "
+        "backend/frontend/infra.)"
     )
     args_schema: Type[BaseModel] = ConfigurableRepoReadInput
 

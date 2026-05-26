@@ -6,7 +6,7 @@ archaeology_task:
     Step 1 — Produce state.md by reading the service and its surroundings.
 
     Suggested order of reads (use list_repo_directory first to discover the
-    structure, then read_repo_file for specific files, and read_git_log for
+    structure, then read_configured_repo_file for specific files, and read_git_log for
     activity signals):
 
       1) `list_repo_directory(repo="{repo_name}", relative_path="{service_path}",
@@ -14,9 +14,9 @@ archaeology_task:
       2) `list_repo_directory(repo="{repo_name}", relative_path="memory-bank",
          max_depth=2)` — check for repo-level memory-bank. If it exists, read
          every file in it (projectbrief.md is highest priority).
-      3) `read_repo_file(repo="{repo_name}", relative_path="{service_path}/README.md")`
+      3) `read_configured_repo_file(repo="{repo_name}", relative_path="{service_path}/README.md")`
          and the equivalents for CLAUDE.md / AGENTS.md / DEPLOYMENT.md if present.
-      4) `read_repo_file` on the service entry point (main.py, app/main.py, etc.).
+      4) `read_configured_repo_file` on the service entry point (main.py, app/main.py, etc.).
       5) `read_git_log(repo="{repo_name}")` — overall activity, last 20 commits.
       6) `read_git_log(repo="{repo_name}", relative_path="{service_path}")` —
          service-scoped activity, last 20 commits.
@@ -79,7 +79,7 @@ operations_task:
       - `{service_path}/pyproject.toml` (for dependencies and entrypoint)
 
     To map downstream consumers (Section 7 of the final handover), inspect
-    other configured repos via `list_repo_directory` + `read_repo_file`. State
+    other configured repos via `list_repo_directory` + `read_configured_repo_file`. State
     explicitly which repos you searched and what you searched for.
 
     Your output MUST contain the sections enumerated in

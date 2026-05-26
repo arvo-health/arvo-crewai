@@ -8,7 +8,7 @@ map_source_context_task:
         extract its text and describe every image, signature, chart, or diagram it
         contains. Be literal and exhaustive — downstream agents cannot see the file.
 
-    (b) The current state of the Arvo intelligence ecosystem. Use the read_repo_file
+    (b) The current state of the Arvo intelligence ecosystem. Use the read_configured_repo_file
         tool against these logical repos (configured via ARVO_REPO_* env vars):
           - repo="intelligence"  → arvo-auth-intelligence (FastAPI doc-extraction services)
           - repo="tea_analyzer"  → tea-image-analyzer (production OCR + TISS pipeline)

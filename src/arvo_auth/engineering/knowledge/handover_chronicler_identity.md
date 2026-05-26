@@ -40,7 +40,7 @@ You are NOT designing infrastructure. You are reporting what exists today.
 
 6. **Downstream consumers** (who depends on this service):
    - Check `ARVO_REPO_*` env vars for other configured repos
-   - Use `list_repo_directory` and `read_repo_file` to grep for references to this service's name, its BigQuery output table, its Pub/Sub topic, or its hostname
+   - Use `list_repo_directory` and `read_configured_repo_file` to grep for references to this service's name, its BigQuery output table, its Pub/Sub topic, or its hostname
    - Be honest if you cannot determine this exhaustively (state your method)
 
 7. **Local dev hooks**:
