@@ -14,7 +14,7 @@
 | **Ficheiro** (futuro) | `src/arvo_auth/data_science/linear_sync_crew.py` |
 | **Configuração** (futura) | `config/linear_sync_agents.yaml`, `config/linear_sync_tasks.yaml` |
 | **Processo** | Sequencial |
-| **Comando** (futuro) | `uv run ds_run_linear_sync` (opcionalmente `-- /path/para/outro.md`) |
+| **Comando** (futuro) | `uv run run_ds_linear_sync` (opcionalmente `-- /path/para/outro.md`) |
 | **Entrada em código** (futura) | `main.run_ds_linear_sync()` |
 
 ## Objetivo
@@ -56,7 +56,7 @@ Dois agentes sequenciais:
 | `ARVO_LINEAR_DRY_RUN` | Opcional | `1` = só loga o que faria, não cria nada |
 | `ARVO_DS_LINEAR_INPUT_PATH` | Opcional | Path do artefacto de entrada. Default: `outputs/data_science/experiment_spec/experiment_spec.md` |
 
-Path pode também ser passado como primeiro argumento CLI: `uv run ds_run_linear_sync -- /caminho/para/spec.md`.
+Path pode também ser passado como primeiro argumento CLI: `uv run run_ds_linear_sync -- /caminho/para/spec.md`.
 
 ### Saídas planejadas
 

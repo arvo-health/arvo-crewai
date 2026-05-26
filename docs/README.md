@@ -19,9 +19,9 @@
 
 | Documento | Crew | Status | Comando típico |
 | --- | --- | --- | --- |
-| [crew-ds-experiment-spec.md](crews/crew-ds-experiment-spec.md) | `ExperimentSpecCrew` | Implementado | `uv run ds_run_experiment_spec` |
-| [crew-ds-solution-architecture.md](crews/crew-ds-solution-architecture.md) | `SolutionArchitectureCrew` | Planejado | _(futuro)_ `uv run ds_run_solution_architecture` |
-| [crew-ds-linear-sync.md](crews/crew-ds-linear-sync.md) | `LinearSyncCrew` | Planejado | _(futuro)_ `uv run ds_run_linear_sync` |
+| [crew-ds-experiment-spec.md](crews/crew-ds-experiment-spec.md) | `ExperimentSpecCrew` | Implementado | `uv run run_ds_experiment_spec` |
+| [crew-ds-solution-architecture.md](crews/crew-ds-solution-architecture.md) | `SolutionArchitectureCrew` | Planejado | _(futuro)_ `uv run run_ds_solution_architecture` |
+| [crew-ds-linear-sync.md](crews/crew-ds-linear-sync.md) | `LinearSyncCrew` | Planejado | _(futuro)_ `uv run run_ds_linear_sync` |
 
 Visão geral de instalação e variáveis: [README.md](../README.md) (EN) e [README.pt-BR.md](../README.pt-BR.md) (pt-BR).
 

@@ -229,9 +229,9 @@ from arvo_auth.core.llm_defaults import default_llm
 
 | Command | Crew | Purpose | Docs |
 | --- | --- | --- | --- |
-| `uv run ds_run_experiment_spec` | `ExperimentSpecCrew` | Discovery PDF + Arvo repos → `experiment_spec.md` | [crew-ds-experiment-spec.md](docs/crews/crew-ds-experiment-spec.md) |
-| _(planned)_ `uv run ds_run_solution_architecture` | `SolutionArchitectureCrew` | Validated `experiment_spec.md` → `solution_architecture.md` (production design) | [crew-ds-solution-architecture.md](docs/crews/crew-ds-solution-architecture.md) |
-| _(planned)_ `uv run ds_run_linear_sync` | `LinearSyncCrew` | Any spec markdown → granular Linear issues via MCP | [crew-ds-linear-sync.md](docs/crews/crew-ds-linear-sync.md) |
+| `uv run run_ds_experiment_spec` | `ExperimentSpecCrew` | Discovery PDF + Arvo repos → `experiment_spec.md` | [crew-ds-experiment-spec.md](docs/crews/crew-ds-experiment-spec.md) |
+| _(planned)_ `uv run run_ds_solution_architecture` | `SolutionArchitectureCrew` | Validated `experiment_spec.md` → `solution_architecture.md` (production design) | [crew-ds-solution-architecture.md](docs/crews/crew-ds-solution-architecture.md) |
+| _(planned)_ `uv run run_ds_linear_sync` | `LinearSyncCrew` | Any spec markdown → granular Linear issues via MCP | [crew-ds-linear-sync.md](docs/crews/crew-ds-linear-sync.md) |
 
 Per-crew documentation (agents, artifacts, env vars, Mermaid flows): [docs/README.md](docs/README.md).
 

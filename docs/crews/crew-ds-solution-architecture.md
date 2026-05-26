@@ -12,7 +12,7 @@
 | **Ficheiro** (futuro) | `src/arvo_auth/data_science/solution_architecture_crew.py` |
 | **Configuração** (futura) | `config/solution_architecture_agents.yaml`, `config/solution_architecture_tasks.yaml` |
 | **Processo** | Sequencial |
-| **Comando** (futuro) | `uv run ds_run_solution_architecture` |
+| **Comando** (futuro) | `uv run run_ds_solution_architecture` |
 | **Entrada em código** (futura) | `main.run_ds_solution_architecture()` |
 
 ## Objetivo

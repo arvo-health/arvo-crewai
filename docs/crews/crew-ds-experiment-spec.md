@@ -10,7 +10,7 @@
 | **Ficheiro** | `src/arvo_auth/data_science/experiment_spec_crew.py` |
 | **Configuração** | `config/experiment_spec_agents.yaml`, `config/experiment_spec_tasks.yaml` |
 | **Processo** | Sequencial |
-| **Comando** | `uv run ds_run_experiment_spec` |
+| **Comando** | `uv run run_ds_experiment_spec` |
 | **Entrada em código** | `main.run_ds_experiment_spec()` |
 
 ## Objetivo
@@ -40,7 +40,7 @@ O fluxo completo:
 ```
 [Fase 0]  Responder experiment_clarifying_questions.md   → ARVO_DS_BRIEFING_MARKDOWN
               ↓
-[Fase 1]  uv run ds_run_experiment_spec                  → experiment_spec.md
+[Fase 1]  uv run run_ds_experiment_spec                  → experiment_spec.md
 ```
 
 ## O que faz

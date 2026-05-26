@@ -1,7 +1,7 @@
 # Experiment — Phase 0 Clarifying Questions
 
 This is the **canonical question checklist** that must be answered **before** running
-`ds_run_experiment_spec`. It is an official step of the DS experiment process — not
+`run_ds_experiment_spec`. It is an official step of the DS experiment process — not
 optional, not ad-hoc.
 
 **Status:** currently answered **manually** (a human fills the answers, or Claude asks
@@ -14,7 +14,7 @@ them interactively in a Claude Code session). It will be automated by a
    is a valid answer — it tells the experiment designer where the gaps are.
 2. Put the answered version into `ARVO_DS_BRIEFING_MARKDOWN` (inline) or a file you
    reference there.
-3. Run `uv run ds_run_experiment_spec`. The designer treats these answers as
+3. Run `uv run run_ds_experiment_spec`. The designer treats these answers as
    constraints, not suggestions.
 
 Answer the **must** questions always; the **nice** ones improve the spec but can be
