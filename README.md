@@ -211,6 +211,8 @@ from arvo_auth.core.llm_defaults import default_llm
 
 ## Crews
 
+### Engineering team
+
 | Command | Crew | Purpose | Docs |
 | --- | --- | --- | --- |
 | `crewai run` | `ArvoAuthOrchestrator` | SDLC pipeline: planning → maintenance readiness | [crew-sdlc-pipeline.md](docs/crews/crew-sdlc-pipeline.md) |
@@ -221,6 +223,15 @@ from arvo_auth.core.llm_defaults import default_llm
 | `uv run run_srs_meeting_update` | `SrsMeetingChangesPlanCrew` | Transcript + Notion comment scan → `notion_changes_diff.md` | [crew-srs-meeting-update.md](docs/crews/crew-srs-meeting-update.md) |
 | `uv run run_srs_meeting_update_apply` | `SrsMeetingChangesApplyCrew` | Apply diff via MCP + bump Versions in SRS and Notion | [crew-srs-meeting-update.md](docs/crews/crew-srs-meeting-update.md) |
 | `uv run run_srs_notion_diff_apply` | `SrsNotionDiffApplyCrew` | Apply diff to Notion only (no Versions update) | [crew-srs-notion-diff-apply.md](docs/crews/crew-srs-notion-diff-apply.md) |
+| `uv run run_service_handover` | `ServiceHandoverCrew` | Service directory + memory-bank + git log → `<service>_handover.md` (paused-service runbook). Reusable by any team. | [crew-service-handover.md](docs/crews/crew-service-handover.md) |
+
+### Data science team
+
+| Command | Crew | Purpose | Docs |
+| --- | --- | --- | --- |
+| `uv run run_ds_experiment_spec` | `ExperimentSpecCrew` | Discovery PDF + Arvo repos → `experiment_spec.md` | [crew-ds-experiment-spec.md](docs/crews/crew-ds-experiment-spec.md) |
+| _(planned)_ `uv run run_ds_solution_architecture` | `SolutionArchitectureCrew` | Validated `experiment_spec.md` → `solution_architecture.md` (production design) | [crew-ds-solution-architecture.md](docs/crews/crew-ds-solution-architecture.md) |
+| _(planned)_ `uv run run_ds_linear_sync` | `LinearSyncCrew` | Any spec markdown → granular Linear issues via MCP | [crew-ds-linear-sync.md](docs/crews/crew-ds-linear-sync.md) |
 
 Per-crew documentation (agents, artifacts, env vars, Mermaid flows): [docs/README.md](docs/README.md).
 

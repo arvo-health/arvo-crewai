@@ -2,6 +2,7 @@
 __pycache__/
 .DS_Store
 outputs/
+inputs/
 plans/
 report.md
 .crewai_runtime_home/

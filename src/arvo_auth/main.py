@@ -451,6 +451,222 @@ def run_frontend_branch_mapping():
         print("---- end preview ----\n")
 
 
+def _service_slug_for_handover(service_path: str) -> str:
+    slug = service_path.strip().strip("/").replace("/", "__").replace(" ", "_")
+    return slug or "default"
+
+
+def _handover_output_dir() -> Path:
+    raw = os.getenv("ARVO_HANDOVER_OUTPUT_DIR", "").strip()
+    if raw:
+        return Path(raw).expanduser().resolve()
+    slug = _service_slug_for_handover(os.getenv("ARVO_HANDOVER_SERVICE", "default"))
+    return _project_root() / "outputs" / "engineering" / "service_handover" / slug
+
+
+def _build_handover_inputs() -> dict:
+    """Inputs for `ServiceHandoverCrew` (engineering team)."""
+    rules_name = os.getenv(
+        "ARVO_HANDOVER_RULES_FILE", "handover_authoring_rules.md"
+    ).strip()
+    rules_path = (
+        Path(__file__).parent / "engineering" / "knowledge" / rules_name
+    )
+    rules_text = (
+        rules_path.read_text(encoding="utf-8")
+        if rules_path.is_file()
+        else f"(missing rules file at engineering/knowledge/{rules_name})"
+    )
+
+    repo_name = os.getenv("ARVO_HANDOVER_REPO", "").strip()
+    if not repo_name:
+        raise Exception(
+            "Missing handover repo. Set ARVO_HANDOVER_REPO to the logical repo "
+            "name (e.g. 'intelligence') or pass it as the first CLI argument."
+        )
+
+    service_path = os.getenv("ARVO_HANDOVER_SERVICE", "").strip()
+    if not service_path:
+        raise Exception(
+            "Missing handover service path. Set ARVO_HANDOVER_SERVICE to the "
+            "sub-path inside the repo (e.g. 'services/doc-quality') or pass it "
+            "as the second CLI argument."
+        )
+
+    briefing = os.getenv("ARVO_HANDOVER_BRIEFING_MARKDOWN", "").strip()
+    if not briefing:
+        briefing = "(no extra briefing provided)"
+
+    status_hint = os.getenv("ARVO_HANDOVER_STATUS_HINT", "").strip()
+    if not status_hint:
+        status_hint = "(none — infer from source signals)"
+
+    backlog_raw = os.getenv("ARVO_HANDOVER_BACKLOG_FILE", "").strip()
+    if backlog_raw:
+        bp = Path(backlog_raw).expanduser()
+        bp = bp.resolve() if bp.is_absolute() else (_project_root() / bp).resolve()
+        if bp.is_file():
+            text = bp.read_text(encoding="utf-8", errors="replace")
+            if len(text) > 80_000:
+                text = text[:80_000] + "\n\n[... backlog file truncated at 80KB ...]"
+            backlog_content = text
+        else:
+            backlog_content = f"(ARVO_HANDOVER_BACKLOG_FILE set to {bp} but file not found)"
+    else:
+        backlog_content = (
+            "(no external backlog provided — Section 9 should rely on in-code signals only)"
+        )
+
+    return {
+        "project_name": os.getenv("ARVO_HANDOVER_PROJECT_NAME", repo_name),
+        "repo_name": repo_name,
+        "service_path": service_path,
+        "status_hint": status_hint,
+        "current_year": str(datetime.now().year),
+        "briefing_markdown": briefing,
+        "backlog_content": backlog_content,
+        "handover_authoring_rules": rules_text,
+    }
+
+
+def run_service_handover():
+    """Generate a handover document for a single service in a configured repo.
+
+    For paused/legacy services. Reads the service directory, memory-bank,
+    git log, deploy configs, and optionally cross-repo consumer references.
+    Produces three artefacts under outputs/engineering/service_handover/<slug>/:
+      - state.md (factual inventory)
+      - operations.md (operational chronicle)
+      - <slug>_handover.md (final survival-guide document)
+
+    Required env: ARVO_HANDOVER_REPO, ARVO_HANDOVER_SERVICE
+      (also accepted positionally: `uv run run_service_handover -- <repo> <service>`)
+
+    Recommended env: ARVO_HANDOVER_PROJECT_NAME, ARVO_HANDOVER_STATUS_HINT.
+    """
+    from arvo_auth.engineering.service_handover_crew import ServiceHandoverCrew
+
+    # Allow positional CLI args: repo, then service path.
+    positional: list[str] = []
+    for arg in sys.argv[1:]:
+        s = arg.strip()
+        if not s or s == "--":
+            continue
+        positional.append(s)
+    if positional:
+        if not os.getenv("ARVO_HANDOVER_REPO", "").strip():
+            os.environ["ARVO_HANDOVER_REPO"] = positional[0]
+        if len(positional) > 1 and not os.getenv("ARVO_HANDOVER_SERVICE", "").strip():
+            os.environ["ARVO_HANDOVER_SERVICE"] = positional[1]
+
+    out_dir = _handover_output_dir()
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    inputs = _build_handover_inputs()
+    try:
+        ServiceHandoverCrew().crew().kickoff(inputs=inputs)
+    except Exception as e:
+        raise Exception(
+            f"An error occurred while running the service handover crew: {e}"
+        ) from e
+
+    slug = _service_slug_for_handover(inputs["service_path"])
+    handover_path = out_dir / f"{slug}_handover.md"
+    print("\nService handover finished.")
+    print(f"  - state:     {out_dir / 'state.md'}")
+    print(f"  - operations:{out_dir / 'operations.md'}")
+    print(f"  - handover:  {handover_path}")
+
+
+def _build_ds_experiment_spec_inputs() -> dict:
+    """Inputs for `ExperimentSpecCrew` (data_science team)."""
+    rules_name = os.getenv(
+        "ARVO_DS_RULES_FILE", "experiment_authoring_rules.md"
+    ).strip()
+    rules_path = (
+        Path(__file__).parent / "data_science" / "knowledge" / rules_name
+    )
+    rules_text = (
+        rules_path.read_text(encoding="utf-8")
+        if rules_path.is_file()
+        else f"(missing rules file at data_science/knowledge/{rules_name})"
+    )
+
+    input_pdf_raw = os.getenv("ARVO_DS_INPUT_PDF", "").strip()
+    if input_pdf_raw:
+        p = Path(input_pdf_raw).expanduser()
+        input_pdf = p.resolve() if p.is_absolute() else (_project_root() / p).resolve()
+        input_pdf_path = str(input_pdf)
+    else:
+        input_pdf_path = (
+            "(Set ARVO_DS_INPUT_PDF to the absolute path of the discovery PDF/PNG.)"
+        )
+
+    # Briefing: prefer a file (ARVO_DS_BRIEFING_FILE) over inline markdown. The file form
+    # is the home for Phase 0 clarifying-question answers and avoids passing large
+    # multi-line content through an inline env var.
+    briefing_file = os.getenv("ARVO_DS_BRIEFING_FILE", "").strip()
+    if briefing_file:
+        bp = Path(briefing_file).expanduser()
+        bp = bp.resolve() if bp.is_absolute() else (_project_root() / bp).resolve()
+        briefing = (
+            bp.read_text(encoding="utf-8", errors="replace")
+            if bp.is_file()
+            else f"(ARVO_DS_BRIEFING_FILE set to {bp} but file not found)"
+        )
+    else:
+        briefing = os.getenv("ARVO_DS_BRIEFING_MARKDOWN", "").strip()
+    if not briefing:
+        briefing = "(no extra briefing provided)"
+
+    return {
+        "project_name": os.getenv("ARVO_DS_PROJECT_NAME", "data-science experiment"),
+        "phase_name": os.getenv("ARVO_DS_PHASE", "poc"),
+        "current_year": str(datetime.now().year),
+        "input_pdf_path": input_pdf_path,
+        "briefing_markdown": briefing,
+        "experiment_authoring_rules": rules_text,
+    }
+
+
+def run_ds_experiment_spec():
+    """Generate an experiment specification (data_science team).
+
+    Reads a discovery artefact (PDF/PNG) and the configured Arvo repos, then produces
+    three artefacts under `outputs/data_science/experiment_spec/`:
+      - source_context.md (state of the world)
+      - experiment_design.md (research plan)
+      - experiment_spec.md (final stakeholder-ready document)
+
+    Required env: ARVO_DS_INPUT_PDF (or first CLI argument).
+    Recommended env: ARVO_DS_PROJECT_NAME, ARVO_DS_PHASE,
+    ARVO_REPO_INTELLIGENCE, ARVO_REPO_TEA_ANALYZER, ARVO_REPO_ROOTS.
+    """
+    from arvo_auth.data_science.experiment_spec_crew import ExperimentSpecCrew
+
+    # Allow passing the PDF path as the first CLI argument for ergonomics.
+    if not os.getenv("ARVO_DS_INPUT_PDF", "").strip() and len(sys.argv) > 1:
+        for arg in sys.argv[1:]:
+            s = arg.strip()
+            if not s or s == "--":
+                continue
+            os.environ["ARVO_DS_INPUT_PDF"] = s
+            break
+
+    root = _project_root()
+    (root / "outputs" / "data_science" / "experiment_spec").mkdir(
+        parents=True, exist_ok=True
+    )
+
+    inputs = _build_ds_experiment_spec_inputs()
+    try:
+        ExperimentSpecCrew().crew().kickoff(inputs=inputs)
+    except Exception as e:
+        raise Exception(
+            f"An error occurred while running the DS experiment spec crew: {e}"
+        ) from e
+
+
 def run_notion_gap_comments():
     """Post Notion page comments to clarify gaps/conflicts (REST API; requires API key)."""
     from arvo_auth.engineering.notion_gap_comment_crew import NotionGapCommentCrew
