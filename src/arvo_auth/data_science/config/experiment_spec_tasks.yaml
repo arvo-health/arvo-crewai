@@ -57,9 +57,10 @@ map_source_context_task:
 
 design_experiment_task:
   description: >
-    Step 2 — Call read_workflow_artifact("data_science/experiment_spec/source_context.md")
-    first; everything you write must be grounded in that file. Call
-    read_briefing_markdown("experiment_authoring_rules.md") for the authoring conventions.
+    Step 2 — The full source_context.md from Step 1 is already provided to you as task
+    context — read it there and ground everything you write in it (do not call a tool to
+    re-read it). For the authoring conventions, call
+    read_briefing_markdown("experiment_authoring_rules.md").
 
     Produce experiment_design.md proposing the offline validation plan for the capability
     identified in source_context.md.
@@ -106,15 +107,12 @@ author_experiment_spec_task:
     Step 3 — Author experiment_spec.md for phase {phase_name} of project {project_name}.
     Year: {current_year}.
 
-    You MUST call read_workflow_artifact for both of these files before writing:
-      - data_science/experiment_spec/source_context.md
-      - data_science/experiment_spec/experiment_design.md
+    Both prior artefacts — source_context.md (Step 1) and experiment_design.md (Step 2) —
+    are already provided to you as task context. Read them there; do not call a tool to
+    re-read them. Synthesise them into the final document.
 
-    You MUST also call read_briefing_markdown("experiment_authoring_rules.md") for the
-    mandatory section structure.
-
-    Supplementary organizational rules (optional; do not contradict the identity loaded
-    in your backstory):
+    The mandatory section structure is the rules block below (read it in full before
+    writing):
     ---
     {experiment_authoring_rules}
     ---

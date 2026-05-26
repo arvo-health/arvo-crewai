@@ -10,7 +10,6 @@ from arvo_auth.core.tools.briefing_file_tool import BriefingFileReadTool
 from arvo_auth.core.tools.configurable_repo_read_tool import ConfigurableRepoReadTool
 from arvo_auth.core.tools.directory_list_tool import DirectoryListTool
 from arvo_auth.core.tools.git_log_read_tool import GitLogReadTool
-from arvo_auth.core.tools.workflow_output_read_tool import WorkflowOutputReadTool
 
 
 def _load_identity(filename: str) -> str:
@@ -53,6 +52,8 @@ class ServiceHandoverCrew:
       - project_name, repo_name, service_path, current_year
       - status_hint: optional lifecycle hint (active/paused/deprecated/experimental)
       - briefing_markdown: optional extra context
+      - backlog_content: verbatim external backlog text (from ARVO_HANDOVER_BACKLOG_FILE)
+        or a sentinel string; feeds the archaeologist's pending-plan-items section
       - handover_authoring_rules: text of knowledge/handover_authoring_rules.md
     """
 
@@ -68,14 +69,14 @@ class ServiceHandoverCrew:
         GitLogReadTool(),
         BriefingFileReadTool(),
     ]
+    # Inter-step artefacts (state.md, operations.md) flow via CrewAI task context=
+    # wiring, not a re-read tool.
     _chronicler_tools = [
         ConfigurableRepoReadTool(),
         DirectoryListTool(),
-        WorkflowOutputReadTool(),
         BriefingFileReadTool(),
     ]
     _author_tools = [
-        WorkflowOutputReadTool(),
         BriefingFileReadTool(),
     ]
 

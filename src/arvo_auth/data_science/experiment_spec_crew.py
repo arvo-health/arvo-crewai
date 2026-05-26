@@ -8,7 +8,6 @@ from arvo_auth.core.llm_defaults import default_llm
 from arvo_auth.core.tools.briefing_file_tool import BriefingFileReadTool
 from arvo_auth.core.tools.configurable_repo_read_tool import ConfigurableRepoReadTool
 from arvo_auth.core.tools.presentation_read_tool import PresentationReadTool
-from arvo_auth.core.tools.workflow_output_read_tool import WorkflowOutputReadTool
 
 
 def _load_ds_identity() -> str:
@@ -38,14 +37,13 @@ class ExperimentSpecCrew:
     agents: list[BaseAgent]
     tasks: list[Task]
 
+    # Inter-step artefacts flow via CrewAI task context= wiring, not a re-read tool.
     _analyst_tools = [
         PresentationReadTool(),
         ConfigurableRepoReadTool(),
         BriefingFileReadTool(),
-        WorkflowOutputReadTool(),
     ]
     _writer_tools = [
-        WorkflowOutputReadTool(),
         BriefingFileReadTool(),
     ]
 

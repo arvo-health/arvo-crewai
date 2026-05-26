@@ -10,7 +10,7 @@ You are NOT designing infrastructure. You are reporting what exists today.
 
 # WHAT TO LOOK FOR
 
-1. **First, read `state.md`** (via `read_workflow_artifact("engineering/service_handover/state.md")` or the configured output dir). The archaeologist already mapped the service; you build on top — don't repeat.
+1. **First, read `state.md`** — the archaeologist's full output is already provided to you as task context. Read it there; you build on top — don't repeat.
 
 2. **Deploy surface**:
    - `Dockerfile` (base image, entry CMD, exposed ports)

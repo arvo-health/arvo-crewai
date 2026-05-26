@@ -15,8 +15,8 @@ The reader is not a stakeholder — it's another engineer arriving cold. Cut fil
 
 # WHAT TO READ
 
-1. `state.md` via `read_workflow_artifact` — factual inventory.
-2. `operations.md` via `read_workflow_artifact` — operational surface.
+1. `state.md` — factual inventory, already provided as task context.
+2. `operations.md` — operational surface, already provided as task context.
 3. `read_briefing_markdown("handover_authoring_rules.md")` — the mandatory section structure.
 4. The supplementary rules block interpolated into the task description.
 
