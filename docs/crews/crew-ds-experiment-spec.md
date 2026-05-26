@@ -19,6 +19,30 @@ A partir de um **artefacto de descoberta** (ex.: PDF de análise manual, slides 
 
 Não desenha arquitetura de produção (responsabilidade de [`SolutionArchitectureCrew`](crew-ds-solution-architecture.md)).
 
+## Fase 0 — Clarifying Questions (passo obrigatório, hoje manual)
+
+**Antes** de rodar o crew, responder o checklist canônico em
+`data_science/knowledge/experiment_clarifying_questions.md`. Isto é um passo **oficial e
+obrigatório** do processo, não opcional. Ele força explicitar o gargalo recorrente
+(dados disponíveis) e a escolha de abordagem (reusar stack existente vs. nova) antes de
+qualquer geração.
+
+- **Como responder hoje (manual):** um humano preenche as respostas — ou o Claude faz as
+  perguntas interativamente numa sessão Claude Code. As respostas vão para
+  `ARVO_DS_BRIEFING_MARKDOWN` (inline ou via arquivo referenciado).
+- **Futuro (produtizado):** um agente `question_designer` rodará as perguntas como
+  primeira fase de um flow de duas etapas (espelhando o meeting-update da engenharia),
+  lendo este mesmo checklist canônico. Será construído quando o processo amadurecer o
+  suficiente para ser passado a outros membros do time DS.
+
+O fluxo completo:
+
+```
+[Fase 0]  Responder experiment_clarifying_questions.md   → ARVO_DS_BRIEFING_MARKDOWN
+              ↓
+[Fase 1]  uv run ds_run_experiment_spec                  → experiment_spec.md
+```
+
 ## O que faz
 
 Três agentes sequenciais:
