@@ -61,28 +61,31 @@ If a section has no content for the current spec, write `_Not applicable for thi
 ### 6. Proposed Approach
 
 - One paragraph describing the technical strategy at a high level.
-- Cite prior art (papers, libraries, public datasets) with at least one reference per non-trivial technique.
+- **Stack-first principle (mandatory):** the proposed approach MUST start from the team's existing production stack, not from the most academically powerful technique. Arvo's document-intelligence services (e.g. `arvo-auth-intelligence/services/doc-extractor`) run on **Gemini (multimodal VLM) + Pydantic AI**; POCs are commonly done by prompting a VLM (Gemini or Claude). So the default first approach is "prompt a VLM the same way `doc-extractor` does", NOT a bespoke trained model.
+- Cite prior art only for the fallback methods; the primary approach should cite the internal service it mirrors.
 
 ### 7. Data Requirements
 
 - Source of data (which BigQuery tables, GCS buckets, partner batches).
-- Volume required (training, validation, test).
-- Ground truth: how labels are obtained, who labels, expected label quality.
+- **Volume as a range, not a gate:** state `ideal`, `minimum viable`, and `if you only have very little, start here` tiers. The team frequently does NOT have large labelled datasets — never write a requirement that blocks the experiment on data the team is unlikely to have. A VLM-prompting first approach often needs *zero* training labels, only a small evaluation set — say so when true.
+- Ground truth: how labels are obtained, who labels, expected label quality. If labels are scarce or expensive, propose the smallest evaluation set that still gives signal.
 - Data privacy / compliance considerations (LGPD if applicable).
 
 ### 8. Methods to Compare
 
-- A **baseline** that any model must beat (often: classical features or rule-based).
-- A **primary** method (the one you propose).
-- Optional **alternatives** to ablate.
-- For each method: a short description and what would make it the chosen approach.
+Ordered by the stack-first principle — cheapest/most-aligned first:
+
+- **Method 1 — Primary (existing-stack replication):** mirror the current production process. For most DS tasks this is "prompt a VLM (Gemini, matching `doc-extractor`; or Claude, matching the POC) with a well-designed prompt + structured Pydantic output". Requires little to no training data. This is what the team should try FIRST.
+- **Method 2 — Fallback A:** only if Method 1 is not good enough. A light step up (e.g. few-shot prompting, prompt + simple classical features, or a small heuristic).
+- **Method 3 — Fallback B:** only if Methods 1–2 fail. The heavier/bespoke option (trained embeddings, Siamese nets, fine-tuning) — flagged explicitly as "new infrastructure, higher cost".
+- For each method: short description, what data it needs, and the concrete bar it must clear to be chosen. Make clear the experiment STOPS at the first method that meets the success criteria — later methods are contingencies, not a mandatory sweep.
 
 ### 9. Evaluation Plan
 
 - Primary metric (with target numeric threshold).
 - Secondary metrics.
-- Evaluation set construction.
-- Statistical significance plan (sample size needed, what test to run).
+- Evaluation set construction — prefer the smallest set that still gives a clear signal.
+- Statistical rigor sized to reality: if a formal significance test needs more samples than the team realistically has, say so and propose a pragmatic alternative (e.g. "eyeball N=20 hard cases + report raw precision/recall; defer significance testing until more labels exist").
 - Failure modes to inspect manually.
 
 ### 10. Phased Roadmap
