@@ -43,11 +43,22 @@ For the service at `{service_path}` inside the repository `{repo_name}`:
 7. **External backlog / plan snapshot** (when provided in the task description):
    - The task body may interpolate a tabular backlog the team kept outside the
      repo (Google Sheets, Excel, Notion). When present, parse it row by row.
+   - **It is a factual error to claim no backlog was provided when the task
+     body clearly contains one.** If the interpolated block has an `Estado`
+     column, the backlog IS present — enumerate it.
    - Identify rows whose `Estado` is `Pending`, `Pronto para começar`, or
      `Testes e correções` — these are the "next steps that never happened".
    - Filter to rows that **plausibly apply to the current service**, judged
-     by `Inteligência`, `Tipo`, and `Descrição` columns. Be permissive: if a
-     row's scope is unclear, keep it and annotate `(scope unclear)`.
+     generously. An item applies if it is an agent/rule/ETL executed inside
+     this service, mentions it, or feeds/consumes it. CONCRETE EXAMPLE: for
+     `auth-agents-orchestrator`, a row `T009 | Agente | OPME registro ANVISA
+     inválido` IS relevant — it is an agent the orchestrator runs, even though
+     the orchestrator is not named in the row. The same applies to every
+     `Tipo=Agente` / `Tipo=ETL` row when documenting the orchestrator that
+     executes those agents/ETLs.
+   - Be permissive: if a row's scope is unclear, keep it and annotate
+     `(scope unclear)`. Only drop rows clearly about an unrelated service, and
+     state how many you dropped.
    - Quote rows verbatim; do not paraphrase ANS error codes or status strings.
 
 # RULES & CONSTRAINTS

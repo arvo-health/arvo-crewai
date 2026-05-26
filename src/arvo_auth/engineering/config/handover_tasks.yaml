@@ -27,25 +27,34 @@ archaeology_task:
     {briefing_markdown}
     ---
 
-    External backlog / plan snapshot (optional — may describe pending next
-    steps that never happened, decisions, or roadmap items). Treat this as a
-    PRIMARY source for "what was planned but not built" — quote items verbatim
-    when you reference them and preserve their Estado/status column:
+    External backlog / plan snapshot. The block below is the AUTHORITATIVE
+    source for "what was planned but not built". Treat it as PRIMARY:
     ---
     {backlog_content}
     ---
+
+    BACKLOG HANDLING (mandatory):
+    - If the block above contains more than 200 characters AND mentions the
+      word "Estado", then a real backlog WAS provided. You are FORBIDDEN from
+      writing "no external backlog was provided" or any equivalent. That is a
+      factual error — the backlog is right there.
+    - Enumerate EVERY row whose `Estado` is `Pending`, `Pronto para começar`,
+      or `Testes e correções`. Do not skip rows because they look out of scope.
+    - Decide relevance generously: an item is relevant to THIS service if it is
+      an agent/rule/ETL that RUNS INSIDE this service, OR mentions this service,
+      OR feeds/consumes this service. Example: a row "T009: OPME registro ANVISA
+      inválido / Agente" IS relevant to `auth-agents-orchestrator` because it is
+      an agent executed by that orchestrator, even though the orchestrator is not
+      named in the row.
+    - Quote each row verbatim (Estado, Agente ID, Tipo, Inteligência/Descrição,
+      ANS codes). For genuinely ambiguous scope, still include it, annotated
+      `(scope unclear)`. Only drop a row if it is clearly about a different,
+      unrelated service — and say how many you dropped.
 
     Your output MUST contain the sections enumerated in
     knowledge/handover_archaeologist_identity.md (Service Identity, Lifecycle
     Signals, File Structure, Memory-bank Synthesis if present, Code Surface,
     Abandoned / WIP Signals & Pending Plan Items, Source References).
-
-    For the "Abandoned / WIP Signals & Pending Plan Items" section: if a
-    backlog was provided above, enumerate every row whose `Estado` is
-    `Pending`, `Pronto para começar`, or `Testes e correções` AND that is
-    plausibly relevant to this service. Quote the row verbatim (Estado, Tipo,
-    Inteligência/Descrição, ANS codes). For unclear relevance, include with a
-    note "may or may not apply to this service".
 
     Cite every claim with `(per <repo>/<path>)`. Do not speculate.
 

@@ -96,11 +96,12 @@ Two distinct groups — keep them as separate subsections:
 - Branches mentioned in docs but not merged.
 - Configs gated behind feature flags that never went on.
 
-**9.2 Pending plan items from external backlog** (if provided):
+**9.2 Pending plan items from external backlog**:
+- **Anti-hallucination rule:** if the `state.md` from the archaeologist contains a pending-items table (or the backlog content reached the chain), it is FORBIDDEN to write "no external backlog provided". When a backlog with an `Estado` column exists, open this subsection with exactly: `External backlog provided — N rows applicable to this service:` followed by the table.
 - A table reproducing every row from the backlog whose `Estado` indicates not-done (`Pending`, `Pronto para começar`, `Testes e correções`) AND that plausibly applies to this service.
 - Columns to preserve: `Estado`, `Agente ID` (if any), `Tipo`, `Inteligência/Descrição`, `Código ANS`.
-- If relevance to this specific service is ambiguous, include with a `(scope unclear)` note rather than dropping silently.
-- If no backlog was provided, write `_No external backlog provided._` and rely on 9.1 only.
+- Relevance is judged generously: an item belongs if it is an agent/rule/ETL that runs inside this service, mentions it, or feeds/consumes it. If scope is genuinely ambiguous, include with `(scope unclear)` rather than dropping.
+- Only when NO backlog reached the chain at all, write `_No external backlog provided._` and rely on 9.1.
 
 ### 10. Survival Guide
 
