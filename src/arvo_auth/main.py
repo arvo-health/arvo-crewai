@@ -602,7 +602,20 @@ def _build_ds_experiment_spec_inputs() -> dict:
             "(Set ARVO_DS_INPUT_PDF to the absolute path of the discovery PDF/PNG.)"
         )
 
-    briefing = os.getenv("ARVO_DS_BRIEFING_MARKDOWN", "").strip()
+    # Briefing: prefer a file (ARVO_DS_BRIEFING_FILE) over inline markdown. The file form
+    # is the home for Phase 0 clarifying-question answers and avoids passing large
+    # multi-line content through an inline env var.
+    briefing_file = os.getenv("ARVO_DS_BRIEFING_FILE", "").strip()
+    if briefing_file:
+        bp = Path(briefing_file).expanduser()
+        bp = bp.resolve() if bp.is_absolute() else (_project_root() / bp).resolve()
+        briefing = (
+            bp.read_text(encoding="utf-8", errors="replace")
+            if bp.is_file()
+            else f"(ARVO_DS_BRIEFING_FILE set to {bp} but file not found)"
+        )
+    else:
+        briefing = os.getenv("ARVO_DS_BRIEFING_MARKDOWN", "").strip()
     if not briefing:
         briefing = "(no extra briefing provided)"
 
