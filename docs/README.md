@@ -23,6 +23,17 @@
 | [crew-ds-solution-architecture.md](crews/crew-ds-solution-architecture.md) | `SolutionArchitectureCrew` | Planejado | _(futuro)_ `uv run run_ds_solution_architecture` |
 | [crew-ds-linear-sync.md](crews/crew-ds-linear-sync.md) | `LinearSyncCrew` | Planejado | _(futuro)_ `uv run run_ds_linear_sync` |
 
+## Time copilot
+
+Automação de fluxos para assistentes de código (Cursor, Claude Code). Artefatos em `outputs/copilot/`.
+
+| Documento | Crew | Status | Comando típico |
+| --- | --- | --- | --- |
+| [crew-copilot-srs-author.md](crews/crew-copilot-srs-author.md) | `CopilotSrsAuthorCrew` | Implementado | `uv run run_copilot_srs` · `uv run run_copilot_srs_replay` |
+| [crew-copilot-srs-notion-publish.md](crews/crew-copilot-srs-notion-publish.md) | `CopilotSrsNotionPublishCrew` | Implementado | `uv run run_copilot_notion_publish` |
+
+Para adicionar outro crew: [como-criar-um-flow.md](como-criar-um-flow.md).
+
 Visão geral de instalação e variáveis: [README.md](../README.md) (EN) e [README.pt-BR.md](../README.pt-BR.md) (pt-BR).
 
 ## Guias

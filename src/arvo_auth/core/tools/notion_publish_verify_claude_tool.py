@@ -3,26 +3,21 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 from typing import Type
 
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
+from arvo_auth.core.srs_notion_publish_config import (
+    ENGINEERING_NOTION_PUBLISH,
+    SrsNotionPublishTeamConfig,
+)
+from arvo_auth.core.srs_publish_paths import (
+    publish_execution_log_path,
+    publish_plan_path,
+    resolve_srs_publish_path,
+)
 from arvo_auth.core.tools.notion_claude_delegate import run_claude_code_print
-from arvo_auth.core.tools.srs_publish_read_tool import _resolve_srs_path
-
-
-def _project_root() -> Path:
-    return Path(__file__).resolve().parents[4]
-
-
-def _publish_plan_path() -> Path:
-    return _project_root() / "outputs" / "engineering" / "notion_export" / "publish_plan.md"
-
-
-def _publish_execution_log_path() -> Path:
-    return _project_root() / "outputs" / "engineering" / "notion_export" / "publish_execution_log.md"
 
 
 class NotionPublishVerifyInput(BaseModel):
@@ -36,35 +31,38 @@ class NotionPublishVerifyViaClaudeTool(BaseTool):
     description: str = (
         "After notion_publish_srs_via_claude: run one Claude Code subprocess with Notion MCP "
         "to compare the full SRS.md on disk against the created Notion pages, list any missing "
-        "content, and patch Notion via MCP so no SRS material is omitted. Reads "
-        "outputs/notion_export/publish_plan.md and publish_execution_log.md from disk. "
-        "Requires NOTION_SRS_PARENT_PAGE_ID or NOTION_SRS_PARENT_URL. Timeout: "
-        "NOTION_PUBLISH_VERIFY_CLAUDE_TIMEOUT_SEC (default 3600)."
+        "content, and patch Notion via MCP. Reads publish_plan.md and publish_execution_log.md "
+        "from the team's notion_export folder. Timeout: NOTION_PUBLISH_VERIFY_CLAUDE_TIMEOUT_SEC "
+        "(default 3600)."
     )
     args_schema: Type[BaseModel] = NotionPublishVerifyInput
+    publish_config: SrsNotionPublishTeamConfig = ENGINEERING_NOTION_PUBLISH
 
     def _run(self, unused: str = "") -> str:
-        srs_path, err = _resolve_srs_path()
+        cfg = self.publish_config
+        srs_path, err = resolve_srs_publish_path(cfg)
         if err:
             return err
         assert srs_path is not None
 
-        parent_id = os.getenv("NOTION_SRS_PARENT_PAGE_ID", "").strip()
-        parent_url = os.getenv("NOTION_SRS_PARENT_URL", "").strip()
+        parent_id = cfg.resolve_notion_parent_id()
+        parent_url = cfg.resolve_notion_parent_url()
         if not parent_id and not parent_url:
             return (
-                "Set NOTION_SRS_PARENT_PAGE_ID (Notion page UUID) or NOTION_SRS_PARENT_URL "
-                "for the completeness audit."
+                f"Set {cfg.notion_parent_id_env} (Notion page UUID) or "
+                f"{cfg.notion_parent_url_env} for the completeness audit."
             )
 
-        plan_file = _publish_plan_path()
-        log_file = _publish_execution_log_path()
+        plan_file = publish_plan_path(cfg)
+        log_file = publish_execution_log_path(cfg)
         plan_excerpt = ""
         if plan_file.is_file():
             raw = plan_file.read_text(encoding="utf-8", errors="replace")
             plan_excerpt = raw[:40_000]
             if len(raw) > 40_000:
-                plan_excerpt += "\n\n[... publish_plan.md truncated in prompt; read full file from disk ...]\n"
+                plan_excerpt += (
+                    "\n\n[... publish_plan.md truncated in prompt; read full file from disk ...]\n"
+                )
         else:
             plan_excerpt = "(publish_plan.md not found on disk.)"
 
@@ -73,12 +71,17 @@ class NotionPublishVerifyViaClaudeTool(BaseTool):
             raw = log_file.read_text(encoding="utf-8", errors="replace")
             log_excerpt = raw[:60_000]
             if len(raw) > 60_000:
-                log_excerpt += "\n\n[... publish_execution_log.md truncated in prompt; read full file from disk ...]\n"
+                log_excerpt += (
+                    "\n\n[... publish_execution_log.md truncated in prompt; "
+                    "read full file from disk ...]\n"
+                )
         else:
             log_excerpt = "(publish_execution_log.md not found — run publish step first.)"
 
         parent_hint = (
-            f"Root parent page UUID: {parent_id}" if parent_id else f"Root parent page URL: {parent_url}"
+            f"Root parent page UUID: {parent_id}"
+            if parent_id
+            else f"Root parent page URL: {parent_url}"
         )
 
         timeout = int(os.getenv("NOTION_PUBLISH_VERIFY_CLAUDE_TIMEOUT_SEC", "3600"))
@@ -89,8 +92,8 @@ class NotionPublishVerifyViaClaudeTool(BaseTool):
 Absolute path: {srs_path}
 
 ## On-disk artefacts (read full files if the excerpts below are truncated)
-- Plan: {_publish_plan_path()}
-- Execution log (page titles / URLs): {_publish_execution_log_path()}
+- Plan: {plan_file}
+- Execution log (page titles / URLs): {log_file}
 
 ## Parent hint
 {parent_hint}

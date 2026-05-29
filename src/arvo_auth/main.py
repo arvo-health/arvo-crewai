@@ -6,6 +6,16 @@ import warnings
 from datetime import datetime
 from pathlib import Path
 
+from arvo_auth.core.srs_crew_config import COPILOT_SRS, ENGINEERING_SRS, SrsCrewTeamConfig
+from arvo_auth.core.srs_inputs import (
+    build_notion_publish_kickoff_inputs,
+    build_srs_kickoff_inputs,
+)
+from arvo_auth.core.srs_notion_publish_config import (
+    COPILOT_NOTION_PUBLISH,
+    ENGINEERING_NOTION_PUBLISH,
+    SrsNotionPublishTeamConfig,
+)
 from arvo_auth.engineering.crew import ArvoAuthOrchestrator
 
 
@@ -36,58 +46,24 @@ def run():
 
 
 def _build_srs_inputs() -> dict:
-    """Shared kickoff/replay inputs for `SrsAuthorCrew` (same env as `run_srs`)."""
-    rules_name = os.getenv("ARVO_SRS_RULES_FILE", "srs_authoring_rules.md").strip()
-    rules_path = Path(__file__).parent / "engineering" / "knowledge" / rules_name
-    rules_text = (
-        rules_path.read_text(encoding="utf-8")
-        if rules_path.is_file()
-        else f"(missing rules file at engineering/knowledge/{rules_name})"
-    )
+    """Shared kickoff/replay inputs for `SrsAuthorCrew` (engineering team)."""
+    return build_srs_kickoff_inputs(ENGINEERING_SRS)
 
-    overview_file = os.getenv("ARVO_SRS_OVERVIEW_FILE", "").strip()
-    if overview_file:
-        op = Path(overview_file).expanduser()
-        product_overview = (
-            op.read_text(encoding="utf-8")
-            if op.is_file()
-            else f"(missing overview file: {op})"
-        )
-    else:
-        product_overview = os.getenv("ARVO_SRS_PRODUCT_OVERVIEW", "").strip()
-        if not product_overview:
-            product_overview = (
-                "(Set ARVO_SRS_PRODUCT_OVERVIEW or ARVO_SRS_OVERVIEW_FILE to the product "
-                "overview for this project/phase.)"
-            )
 
-    extra = os.getenv("ARVO_SRS_BRIEFING_MARKDOWN", "").strip()
-    if extra:
-        product_overview += "\n\n### Additional briefing\n" + extra
+def _build_copilot_srs_inputs() -> dict:
+    """Shared kickoff/replay inputs for `CopilotSrsAuthorCrew`."""
+    return build_srs_kickoff_inputs(COPILOT_SRS)
 
-    notion_ids = os.getenv("NOTION_PAGE_IDS", "").strip()
-    if notion_ids:
-        product_overview += (
-            "\n\n### Notion page IDs\n"
-            "Call fetch_notion_page_text once per UUID:\n"
-            + "\n".join(p.strip() for p in notion_ids.replace(",", " ").split() if p.strip())
-        )
 
-    return {
-        "project_name": os.getenv("ARVO_SRS_PROJECT_NAME", "Arvo authorization"),
-        "phase_name": os.getenv("ARVO_SRS_PHASE", "unspecified phase"),
-        "product_overview": product_overview,
-        "srs_authoring_rules": rules_text,
-        "current_year": str(datetime.now().year),
-    }
+def _ensure_srs_output_dir(config: SrsCrewTeamConfig) -> None:
+    config.output_dir(_project_root()).mkdir(parents=True, exist_ok=True)
 
 
 def run_srs():
     """Run the two-agent SRS workflow (artifacts under outputs/engineering/srs_workflow/)."""
     from arvo_auth.engineering.srs_crew import SrsAuthorCrew
 
-    root = _project_root()
-    (root / "outputs" / "engineering" / "srs_workflow").mkdir(parents=True, exist_ok=True)
+    _ensure_srs_output_dir(ENGINEERING_SRS)
 
     inputs = _build_srs_inputs()
     try:
@@ -130,7 +106,7 @@ def run_srs_replay():
         )
 
     root = _project_root()
-    (root / "outputs" / "engineering" / "srs_workflow").mkdir(parents=True, exist_ok=True)
+    _ensure_srs_output_dir(ENGINEERING_SRS)
 
     inputs = _build_srs_inputs()
     try:
@@ -152,23 +128,97 @@ def run_srs_replay():
         raise Exception(f"An error occurred while replaying the SRS crew: {e}") from e
 
 
+def run_copilot_srs():
+    """Run the SRS workflow for the copilot team (outputs/copilot/srs_workflow/)."""
+    from arvo_auth.copilot.srs_crew import CopilotSrsAuthorCrew
+
+    _ensure_srs_output_dir(COPILOT_SRS)
+
+    inputs = _build_copilot_srs_inputs()
+    try:
+        CopilotSrsAuthorCrew().crew().kickoff(inputs=inputs)
+    except Exception as e:
+        raise Exception(
+            f"An error occurred while running the copilot SRS crew: {e}"
+        ) from e
+
+
+def run_copilot_srs_replay():
+    """Re-run `CopilotSrsAuthorCrew` from a stored task via CrewAI `replay`.
+
+    Task id: set `ARVO_COPILOT_SRS_REPLAY_TASK_ID` or pass the UUID on the command line.
+    """
+    from arvo_auth.copilot.srs_crew import CopilotSrsAuthorCrew
+
+    replay_env = COPILOT_SRS.replay_task_id_env or "ARVO_COPILOT_SRS_REPLAY_TASK_ID"
+    task_id = os.getenv(replay_env, "").strip()
+    if not task_id:
+        task_id = _srs_replay_task_id_from_argv()
+    if not task_id:
+        raise Exception(
+            f"Missing replay task id. Set {replay_env} or pass the UUID as "
+            "the first argument (output of `crewai log-tasks-outputs` for "
+            "author_srs_task). Run a full `uv run run_copilot_srs` first so outputs "
+            "are stored."
+        )
+
+    _ensure_srs_output_dir(COPILOT_SRS)
+
+    inputs = _build_copilot_srs_inputs()
+    try:
+        CopilotSrsAuthorCrew().crew().replay(task_id=task_id, inputs=inputs)
+    except ValueError as e:
+        msg_lower = str(e).lower()
+        if "not found" in msg_lower and "task" in msg_lower:
+            raise Exception(
+                f"An error occurred while replaying the copilot SRS crew: {e}\n\n"
+                "The UUID you passed is not a persisted Task id (or nothing is stored). "
+                "Do not use the id from the run summary line (Crew Execution Completed / "
+                "CopilotSrsAuthorCrew id) — that is the crew run id, not a task id. "
+                "Run `crewai log-tasks-outputs` and copy `task_id` from the last row "
+                "(author_srs_task, step 7). If the list is empty or from another crew, "
+                "run `uv run run_copilot_srs` again first."
+            ) from e
+        raise Exception(
+            f"An error occurred while replaying the copilot SRS crew: {e}"
+        ) from e
+    except Exception as e:
+        raise Exception(
+            f"An error occurred while replaying the copilot SRS crew: {e}"
+        ) from e
+
+
+def _ensure_notion_export_dir(config: SrsNotionPublishTeamConfig) -> None:
+    config.notion_export_dir(_project_root()).mkdir(parents=True, exist_ok=True)
+
+
 def run_notion_publish():
-    """Publish SRS.md to Notion (independent crew; uses Notion API)."""
+    """Publish SRS.md to Notion (engineering team; Claude Code + MCP)."""
     from arvo_auth.engineering.notion_publish_crew import SrsNotionPublishCrew
 
-    root = _project_root()
-    (root / "outputs" / "engineering" / "notion_export").mkdir(parents=True, exist_ok=True)
+    _ensure_notion_export_dir(ENGINEERING_NOTION_PUBLISH)
 
-    inputs = {
-        "project_name": os.getenv("ARVO_SRS_PROJECT_NAME", "Arvo authorization"),
-        "phase_name": os.getenv("ARVO_SRS_PHASE", "unspecified phase"),
-        "current_year": str(datetime.now().year),
-    }
+    inputs = build_notion_publish_kickoff_inputs(ENGINEERING_SRS)
     try:
         SrsNotionPublishCrew().crew().kickoff(inputs=inputs)
     except Exception as e:
         raise Exception(
             f"An error occurred while running the Notion publish crew: {e}"
+        ) from e
+
+
+def run_copilot_notion_publish():
+    """Publish SRS.md to Notion (copilot team; Claude Code + MCP)."""
+    from arvo_auth.copilot.notion_publish_crew import CopilotSrsNotionPublishCrew
+
+    _ensure_notion_export_dir(COPILOT_NOTION_PUBLISH)
+
+    inputs = build_notion_publish_kickoff_inputs(COPILOT_SRS)
+    try:
+        CopilotSrsNotionPublishCrew().crew().kickoff(inputs=inputs)
+    except Exception as e:
+        raise Exception(
+            f"An error occurred while running the copilot Notion publish crew: {e}"
         ) from e
 
 

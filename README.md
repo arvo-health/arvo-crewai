@@ -128,6 +128,10 @@ graph TD
     ENGC["engineering/config/"]
     ENGK["engineering/knowledge/"]
     ENGO["outputs/engineering/"]
+    COP["copilot/\n(IDE assistants)"]
+    COPC["copilot/config/"]
+    COPK["copilot/knowledge/"]
+    COPO["outputs/copilot/"]
     NEW["&lt;your_team&gt;/\n(new team)"]
     NEWC["&lt;your_team&gt;/config/"]
     NEWK["&lt;your_team&gt;/knowledge/"]
@@ -139,6 +143,10 @@ graph TD
     ENG --> ENGC
     ENG --> ENGK
     ENG -.->|"writes to"| ENGO
+    PKG --> COP
+    COP --> COPC
+    COP --> COPK
+    COP -.->|"writes to"| COPO
     PKG --> NEW
     NEW --> NEWC
     NEW --> NEWK
@@ -233,6 +241,14 @@ from arvo_auth.core.llm_defaults import default_llm
 | _(planned)_ `uv run run_ds_solution_architecture` | `SolutionArchitectureCrew` | Validated `experiment_spec.md` → `solution_architecture.md` (production design) | [crew-ds-solution-architecture.md](docs/crews/crew-ds-solution-architecture.md) |
 | _(planned)_ `uv run run_ds_linear_sync` | `LinearSyncCrew` | Any spec markdown → granular Linear issues via MCP | [crew-ds-linear-sync.md](docs/crews/crew-ds-linear-sync.md) |
 
+### Copilot team
+
+| Command | Crew | Purpose | Docs |
+| --- | --- | --- | --- |
+| `uv run run_copilot_srs` | `CopilotSrsAuthorCrew` | Overview → artifacts → `SRS.md` (copilot team) | [crew-copilot-srs-author.md](docs/crews/crew-copilot-srs-author.md) |
+| `uv run run_copilot_srs_replay` | `CopilotSrsAuthorCrew` | Replay from a stored task | [crew-copilot-srs-author.md](docs/crews/crew-copilot-srs-author.md) |
+| `uv run run_copilot_notion_publish` | `CopilotSrsNotionPublishCrew` | Copilot `SRS.md` → Notion (Claude Code CLI + MCP) | [crew-copilot-srs-notion-publish.md](docs/crews/crew-copilot-srs-notion-publish.md) |
+
 Per-crew documentation (agents, artifacts, env vars, Mermaid flows): [docs/README.md](docs/README.md).
 
 ---
@@ -274,6 +290,7 @@ arvo_auth_orchestrator/
 │       ├── notion_export/
 │       ├── notion_gap_comments/
 │       └── srs_meeting_update/
+│   └── copilot/                          # (created at runtime by copilot crews)
 ├── src/arvo_auth/
 │   ├── main.py                           # CLI entry points
 │   ├── core/                             # Shared infrastructure
@@ -281,15 +298,21 @@ arvo_auth_orchestrator/
 │   │   ├── claude_code_llm.py            # CrewAI BaseLLM → `claude -p`
 │   │   ├── crewai_react_parse_fix.py     # ReAct output parsing fix
 │   │   └── tools/                        # All shared tools (file I/O, Notion REST/MCP)
-│   └── engineering/                      # Engineering team flows
-│       ├── config/                       # agents.yaml + tasks.yaml per crew
-│       ├── knowledge/                    # Agent identity and authoring rules files
-│       ├── crew.py                       # ArvoAuthOrchestrator (SDLC)
-│       ├── srs_crew.py                   # SrsAuthorCrew
-│       ├── notion_publish_crew.py        # SrsNotionPublishCrew
-│       ├── notion_gap_comment_crew.py    # NotionGapCommentCrew
-│       ├── srs_meeting_update_crew.py    # SrsMeetingChangesPlanCrew + ApplyCrew
-│       └── srs_notion_diff_apply_crew.py # SrsNotionDiffApplyCrew
+│   ├── engineering/                      # Engineering team flows
+│   │   ├── config/                       # agents.yaml + tasks.yaml per crew
+│   │   ├── knowledge/                    # Agent identity and authoring rules files
+│   │   ├── crew.py                       # ArvoAuthOrchestrator (SDLC)
+│   │   ├── srs_crew.py                   # SrsAuthorCrew
+│   │   ├── notion_publish_crew.py        # SrsNotionPublishCrew
+│   │   ├── notion_gap_comment_crew.py    # NotionGapCommentCrew
+│   │   ├── srs_meeting_update_crew.py    # SrsMeetingChangesPlanCrew + ApplyCrew
+│   │   └── srs_notion_diff_apply_crew.py # SrsNotionDiffApplyCrew
+│   ├── data_science/                     # Data science team flows
+│   │   ├── config/
+│   │   └── knowledge/
+│   └── copilot/                          # Copilot team flows (IDE assistants)
+│       ├── config/
+│       └── knowledge/
 ├── docs/                                 # Documentation
 │   └── crews/
 ├── .env.example
