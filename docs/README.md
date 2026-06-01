@@ -28,6 +28,8 @@
 
 Automação de fluxos para assistentes de código (Cursor, Claude Code). Artefatos em `outputs/copilot/`.
 
+O `SRS.md` do [`CopilotSrsAuthorCrew`](crews/crew-copilot-srs-author.md) é **autossuficiente** (seções 1–7; sem referências aos `.md` intermediários do workflow no documento final).
+
 | Documento | Crew | Status | Comando típico |
 | --- | --- | --- | --- |
 | [crew-copilot-srs-author.md](crews/crew-copilot-srs-author.md) | `CopilotSrsAuthorCrew` | Implementado | `uv run run_copilot_srs` · `uv run run_copilot_srs_replay` |

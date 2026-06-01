@@ -246,7 +246,7 @@ from arvo_auth.core.llm_defaults import default_llm
 
 | Comando | Crew | Finalidade | Docs |
 | --- | --- | --- | --- |
-| `uv run run_copilot_srs` | `CopilotSrsAuthorCrew` | Overview → artefatos → `SRS.md` (time copilot) | [crew-copilot-srs-author.md](docs/crews/crew-copilot-srs-author.md) |
+| `uv run run_copilot_srs` | `CopilotSrsAuthorCrew` | Overview → artefatos → `SRS.md` autossuficiente (seções 1–7; sem citações aos `.md` do workflow) | [crew-copilot-srs-author.md](docs/crews/crew-copilot-srs-author.md) |
 | `uv run run_copilot_srs_replay` | `CopilotSrsAuthorCrew` | Replay a partir de tarefa gravada | [crew-copilot-srs-author.md](docs/crews/crew-copilot-srs-author.md) |
 | `uv run run_copilot_notion_publish` | `CopilotSrsNotionPublishCrew` | `SRS.md` copilot → Notion (CLI `claude` + MCP) | [crew-copilot-srs-notion-publish.md](docs/crews/crew-copilot-srs-notion-publish.md) |
 | `uv run run_copilot_linear_tasks` | `CopilotLinearTasksCreationCrew` | SRS Notion copilot → issues Linear (CLI `claude` + MCP Linear) | [crew-copilot-linear-tasks.md](docs/crews/crew-copilot-linear-tasks.md) |
@@ -268,6 +268,14 @@ crewai run
 ```bash
 uv run run_srs
 uv run run_notion_publish
+```
+
+### Time copilot (SRS → Notion → Linear)
+
+```bash
+uv run run_copilot_srs              # outputs/copilot/srs_workflow/SRS.md (autossuficiente)
+uv run run_copilot_notion_publish
+uv run run_copilot_linear_tasks
 ```
 
 ### Atualização SRS por reunião

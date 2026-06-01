@@ -15,6 +15,19 @@
 
 Mesmo pipeline do [`SrsAuthorCrew`](crew-srs-author.md) (engineering): overview de produto → memórias intermediárias → `SRS.md`, com outputs isolados em `outputs/copilot/srs_workflow/`.
 
+O `SRS.md` final é um **contrato autossuficiente** para engenharia, QA e auditoria: o agente lê os sete artefatos intermediários em disco, mas o documento publicado **não** os cita.
+
+## Formato do `SRS.md` final
+
+| Regra | Detalhe |
+| --- | --- |
+| Estrutura | Seções **1–7** apenas (Introdução → Revisão Crítica IEEE 1012-2024) |
+| Introdução | `1.1` Propósito · `1.2` Escopo · `1.3` Definições · `1.4` **Visão Geral do Documento** (não «Referências») |
+| Proibido no corpo | Seção de referências a artefatos do workflow; notas `*Rastreabilidade:*`; matriz de rastreabilidade a ficheiros `.md`; preâmbulo meta; rodapé de proveniência |
+| Artefatos passos 1–6 | Permanecem em `outputs/copilot/srs_workflow/` como **entrada** do crew — não são anexos do SRS entregue |
+
+Política codificada em `copilot/knowledge/srs_authoring_rules.md`, `srs_author_identity.md` e na tarefa `author_srs_task` (`srs_tasks.yaml`). Plano: `plans/copilot_srs_author/plano.md` (critério de aceite #6).
+
 ## Diferenças vs engineering
 
 | Aspeto | Engineering | Copilot |
