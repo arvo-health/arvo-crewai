@@ -227,6 +227,7 @@ from arvo_auth.core.llm_defaults import default_llm
 | `uv run run_srs` | `SrsAuthorCrew` | Visão de produto → artefatos → `SRS.md` | [crew-srs-author.md](docs/crews/crew-srs-author.md) |
 | `uv run run_srs_replay` | `SrsAuthorCrew` | Replay a partir de tarefa gravada (p.ex. só o passo 7) | [crew-srs-author.md](docs/crews/crew-srs-author.md) |
 | `uv run run_notion_publish` | `SrsNotionPublishCrew` | `SRS.md` → hierarquia no Notion (CLI `claude` + MCP) | [crew-srs-notion-publish.md](docs/crews/crew-srs-notion-publish.md) |
+| `uv run run_linear_tasks` | `LinearTasksCreationCrew` | Página SRS no Notion → árvore de issues Linear (CLI `claude` + MCP Linear) | [crew-linear-tasks-creation.md](docs/crews/crew-linear-tasks-creation.md) |
 | `uv run run_notion_gap_comments` | `NotionGapCommentCrew` | Lacunas/conflitos → pesquisa + comentários inline no Notion | [crew-notion-gap-comments.md](docs/crews/crew-notion-gap-comments.md) |
 | `uv run run_srs_meeting_update` | `SrsMeetingChangesPlanCrew` | Transcrição + varredura de comentários Notion → `notion_changes_diff.md` | [crew-srs-meeting-update.md](docs/crews/crew-srs-meeting-update.md) |
 | `uv run run_srs_meeting_update_apply` | `SrsMeetingChangesApplyCrew` | Aplicar diff via MCP + atualizar Versões no SRS e no Notion | [crew-srs-meeting-update.md](docs/crews/crew-srs-meeting-update.md) |
@@ -248,6 +249,7 @@ from arvo_auth.core.llm_defaults import default_llm
 | `uv run run_copilot_srs` | `CopilotSrsAuthorCrew` | Overview → artefatos → `SRS.md` (time copilot) | [crew-copilot-srs-author.md](docs/crews/crew-copilot-srs-author.md) |
 | `uv run run_copilot_srs_replay` | `CopilotSrsAuthorCrew` | Replay a partir de tarefa gravada | [crew-copilot-srs-author.md](docs/crews/crew-copilot-srs-author.md) |
 | `uv run run_copilot_notion_publish` | `CopilotSrsNotionPublishCrew` | `SRS.md` copilot → Notion (CLI `claude` + MCP) | [crew-copilot-srs-notion-publish.md](docs/crews/crew-copilot-srs-notion-publish.md) |
+| `uv run run_copilot_linear_tasks` | `CopilotLinearTasksCreationCrew` | SRS Notion copilot → issues Linear (CLI `claude` + MCP Linear) | [crew-copilot-linear-tasks.md](docs/crews/crew-copilot-linear-tasks.md) |
 
 Documentação detalhada por crew (agentes, artefatos, variáveis, fluxos Mermaid): [docs/README.md](docs/README.md).
 

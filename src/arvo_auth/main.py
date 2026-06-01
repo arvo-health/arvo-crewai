@@ -6,6 +6,15 @@ import warnings
 from datetime import datetime
 from pathlib import Path
 
+from arvo_auth.core.linear_tasks_config import (
+    COPILOT_LINEAR_TASKS,
+    ENGINEERING_LINEAR_TASKS,
+    LinearTasksTeamConfig,
+)
+from arvo_auth.core.linear_tasks_inputs import (
+    build_linear_tasks_kickoff_inputs,
+    ensure_linear_tasks_output_dir,
+)
 from arvo_auth.core.srs_crew_config import COPILOT_SRS, ENGINEERING_SRS, SrsCrewTeamConfig
 from arvo_auth.core.srs_inputs import (
     build_notion_publish_kickoff_inputs,
@@ -220,6 +229,57 @@ def run_copilot_notion_publish():
         raise Exception(
             f"An error occurred while running the copilot Notion publish crew: {e}"
         ) from e
+
+
+def _run_linear_tasks_crew(config: LinearTasksTeamConfig, crew_class_name: str) -> None:
+    """Shared runner for engineering and copilot Linear tasks crews."""
+    root = _project_root()
+    ensure_linear_tasks_output_dir(config, root)
+
+    try:
+        inputs = build_linear_tasks_kickoff_inputs(config)
+    except ValueError as e:
+        raise Exception(str(e)) from e
+
+    if config.team == "copilot":
+        from arvo_auth.copilot.linear_tasks_crew import CopilotLinearTasksCreationCrew
+
+        crew_cls = CopilotLinearTasksCreationCrew
+    else:
+        from arvo_auth.engineering.linear_tasks_crew import LinearTasksCreationCrew
+
+        crew_cls = LinearTasksCreationCrew
+
+    try:
+        crew_cls().crew().kickoff(inputs=inputs)
+    except Exception as e:
+        raise Exception(
+            f"An error occurred while running the {crew_class_name}: {e}"
+        ) from e
+
+    out_dir = config.output_dir(root)
+    log_path = out_dir / "03_publish_log.md"
+    print(f"\n{crew_class_name} finished.")
+    print(f"  - srs content:    {out_dir / '01_srs_content.md'}")
+    print(f"  - issues draft:   {out_dir / '02_issues_draft.json'}")
+    print(f"  - publish log:    {log_path}")
+    if log_path.is_file():
+        preview = log_path.read_text(encoding="utf-8", errors="replace")
+        if len(preview) > 3000:
+            preview = preview[:3000] + "\n\n[... preview truncated ...]\n"
+        print("\n---- Publish log preview ----")
+        print(preview)
+        print("---- end preview ----\n")
+
+
+def run_linear_tasks():
+    """Decompose SRS Notion page into Linear issues (engineering team)."""
+    _run_linear_tasks_crew(ENGINEERING_LINEAR_TASKS, "Linear tasks creation")
+
+
+def run_copilot_linear_tasks():
+    """Decompose copilot SRS Notion page into Linear issues (copilot team)."""
+    _run_linear_tasks_crew(COPILOT_LINEAR_TASKS, "Copilot linear tasks creation")
 
 
 def _meeting_update_dir() -> Path:

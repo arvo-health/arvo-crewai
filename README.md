@@ -227,6 +227,7 @@ from arvo_auth.core.llm_defaults import default_llm
 | `uv run run_srs` | `SrsAuthorCrew` | Product overview → artifacts → `SRS.md` | [crew-srs-author.md](docs/crews/crew-srs-author.md) |
 | `uv run run_srs_replay` | `SrsAuthorCrew` | Replay from a stored task (e.g. regenerate `SRS.md` only) | [crew-srs-author.md](docs/crews/crew-srs-author.md) |
 | `uv run run_notion_publish` | `SrsNotionPublishCrew` | `SRS.md` → Notion page tree (Claude Code CLI + MCP) | [crew-srs-notion-publish.md](docs/crews/crew-srs-notion-publish.md) |
+| `uv run run_linear_tasks` | `LinearTasksCreationCrew` | SRS Notion page → Linear issue tree (Claude Code + Linear MCP) | [crew-linear-tasks-creation.md](docs/crews/crew-linear-tasks-creation.md) |
 | `uv run run_notion_gap_comments` | `NotionGapCommentCrew` | Active gaps/conflicts → Notion search + inline comments | [crew-notion-gap-comments.md](docs/crews/crew-notion-gap-comments.md) |
 | `uv run run_srs_meeting_update` | `SrsMeetingChangesPlanCrew` | Transcript + Notion comment scan → `notion_changes_diff.md` | [crew-srs-meeting-update.md](docs/crews/crew-srs-meeting-update.md) |
 | `uv run run_srs_meeting_update_apply` | `SrsMeetingChangesApplyCrew` | Apply diff via MCP + bump Versions in SRS and Notion | [crew-srs-meeting-update.md](docs/crews/crew-srs-meeting-update.md) |
@@ -248,6 +249,7 @@ from arvo_auth.core.llm_defaults import default_llm
 | `uv run run_copilot_srs` | `CopilotSrsAuthorCrew` | Overview → artifacts → `SRS.md` (copilot team) | [crew-copilot-srs-author.md](docs/crews/crew-copilot-srs-author.md) |
 | `uv run run_copilot_srs_replay` | `CopilotSrsAuthorCrew` | Replay from a stored task | [crew-copilot-srs-author.md](docs/crews/crew-copilot-srs-author.md) |
 | `uv run run_copilot_notion_publish` | `CopilotSrsNotionPublishCrew` | Copilot `SRS.md` → Notion (Claude Code CLI + MCP) | [crew-copilot-srs-notion-publish.md](docs/crews/crew-copilot-srs-notion-publish.md) |
+| `uv run run_copilot_linear_tasks` | `CopilotLinearTasksCreationCrew` | Copilot SRS Notion → Linear issues (Claude Code + Linear MCP) | [crew-copilot-linear-tasks.md](docs/crews/crew-copilot-linear-tasks.md) |
 
 Per-crew documentation (agents, artifacts, env vars, Mermaid flows): [docs/README.md](docs/README.md).
 

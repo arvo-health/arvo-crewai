@@ -9,6 +9,7 @@
 | [crew-sdlc-pipeline.md](crews/crew-sdlc-pipeline.md) | `ArvoAuthOrchestrator` | `crewai run` |
 | [crew-srs-author.md](crews/crew-srs-author.md) | `SrsAuthorCrew` | `uv run run_srs` · `uv run run_srs_replay` |
 | [crew-srs-notion-publish.md](crews/crew-srs-notion-publish.md) | `SrsNotionPublishCrew` | `uv run run_notion_publish` |
+| [crew-linear-tasks-creation.md](crews/crew-linear-tasks-creation.md) | `LinearTasksCreationCrew` | `uv run run_linear_tasks` |
 | [crew-notion-gap-comments.md](crews/crew-notion-gap-comments.md) | `NotionGapCommentCrew` | `uv run run_notion_gap_comments` |
 | [crew-srs-meeting-update.md](crews/crew-srs-meeting-update.md) | `SrsMeetingChangesPlanCrew` (+ opcional `SrsMeetingChangesApplyCrew`) | `uv run run_srs_meeting_update` · `uv run run_srs_meeting_update_apply` |
 | [crew-srs-notion-diff-apply.md](crews/crew-srs-notion-diff-apply.md) | `SrsNotionDiffApplyCrew` | `uv run run_srs_notion_diff_apply` |
@@ -31,6 +32,7 @@ Automação de fluxos para assistentes de código (Cursor, Claude Code). Artefat
 | --- | --- | --- | --- |
 | [crew-copilot-srs-author.md](crews/crew-copilot-srs-author.md) | `CopilotSrsAuthorCrew` | Implementado | `uv run run_copilot_srs` · `uv run run_copilot_srs_replay` |
 | [crew-copilot-srs-notion-publish.md](crews/crew-copilot-srs-notion-publish.md) | `CopilotSrsNotionPublishCrew` | Implementado | `uv run run_copilot_notion_publish` |
+| [crew-copilot-linear-tasks.md](crews/crew-copilot-linear-tasks.md) | `CopilotLinearTasksCreationCrew` | Implementado | `uv run run_copilot_linear_tasks` |
 
 Para adicionar outro crew: [como-criar-um-flow.md](como-criar-um-flow.md).
 

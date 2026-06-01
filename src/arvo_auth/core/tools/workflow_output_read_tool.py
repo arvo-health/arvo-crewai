@@ -30,6 +30,13 @@ _ALLOWED_BY_DIR: dict[str, frozenset[str]] = {
             "branch_mapping.md",
         }
     ),
+    "linear_tasks_creation": frozenset(
+        {
+            "01_srs_content.md",
+            "02_issues_draft.json",
+            "03_publish_log.md",
+        }
+    ),
 }
 _MAX_BYTES = 600_000
 
@@ -46,8 +53,8 @@ class WorkflowOutputReadInput(BaseModel):
     workflow_dir: str = Field(
         default="srs_workflow",
         description=(
-            "Subfolder under outputs/<team>/: srs_workflow (default) or "
-            "frontend_branch_mapping."
+            "Subfolder under outputs/<team>/: srs_workflow (default), "
+            "frontend_branch_mapping, or linear_tasks_creation."
         ),
     )
 
@@ -56,8 +63,9 @@ class WorkflowOutputReadTool(BaseTool):
     name: str = "read_workflow_artifact"
     description: str = (
         "Load a markdown artifact from outputs/<team>/. Use workflow_dir=srs_workflow "
-        "for SRS steps, or workflow_dir=frontend_branch_mapping for 01_github_delta.md, "
-        "02_code_analysis.md, and branch_mapping.md."
+        "for SRS steps, workflow_dir=frontend_branch_mapping for branch mapping artefacts, "
+        "or workflow_dir=linear_tasks_creation for 01_srs_content.md, "
+        "02_issues_draft.json, and 03_publish_log.md."
     )
     args_schema: Type[BaseModel] = WorkflowOutputReadInput
     outputs_team: str = "engineering"
