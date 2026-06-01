@@ -30,6 +30,9 @@ uv run run_copilot_linear_tasks
 | `ARVO_COPILOT_SRS_NOTION_PAGE_URL` | Sim | URL completa da página Dashboard SRS no Notion (fallback: `ARVO_SRS_NOTION_PAGE_URL`) |
 | `ARVO_COPILOT_SRS_NOTION_PAGE_ID` | Legado | UUID (aceito; convertido para URL internamente) |
 | `ARVO_COPILOT_LINEAR_TEAM_KEY` | Sim | Key do time Linear (fallback: `ARVO_LINEAR_TEAM_KEY`, e.g. `COP`) |
+| `ARVO_COPILOT_LINEAR_PROJECT_URL` | Opcional | URL do project Linear (fallback: `ARVO_LINEAR_PROJECT_URL`) |
+| `ARVO_COPILOT_LINEAR_PROJECT_ID` | Legado | UUID/short id (aceito se URL não estiver definida) |
+| `ARVO_COPILOT_LINEAR_PROJECT_NAME` | Legado | Nome do project (aceito se URL não estiver definida) |
 | `ARVO_COPILOT_SRS_PROJECT_NAME`, `ARVO_COPILOT_SRS_PHASE` | Não | Interpolação nos prompts (fallback `ARVO_SRS_*`) |
 | `ARVO_LINEAR_DELEGATE_TIMEOUT_SEC` | Não | Timeout do subprocess `claude -p` por issue (default `180`) |
 | `CLAUDE_CODE_PERMISSION_MODE` | Recomendado | `bypassPermissions` para criação automática via MCP |

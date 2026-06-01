@@ -44,11 +44,22 @@ def build_linear_tasks_kickoff_inputs(config: LinearTasksTeamConfig) -> dict:
     project_name = _env_value(kickoff, "PROJECT_NAME") or kickoff.default_project_name
     phase_name = _env_value(kickoff, "PHASE") or "unspecified phase"
 
+    project_ref, _ = config.resolve_linear_project()
+    linear_project_url = ""
+    if project_ref and project_ref.is_configured():
+        linear_project_url = (
+            project_ref.url
+            or project_ref.legacy_id
+            or project_ref.short_id
+            or project_ref.legacy_name
+        )
+
     return {
         "project_name": project_name,
         "phase_name": phase_name,
         "srs_notion_page_url": page_ref.url,
         "linear_team_key": team_key,
+        "linear_project_url": linear_project_url,
         "current_year": str(datetime.now().year),
     }
 

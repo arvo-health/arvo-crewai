@@ -62,7 +62,8 @@ Acima de 5 → quebrar em múltiplas sub-issues.
 | --- | --- | --- |
 | `get_team` | `team_key` | Verifica que o team existe; retorna UUID |
 | `list_labels` | `team_key` | Lista nomes de labels disponíveis |
-| `create_issue` | `team_key`, `title`, `description`, `labels`, `priority`, `estimate`, `parent_id`, `blocked_by` | Cria uma issue; retorna ID real (e.g. `TEA-42`) |
+| `create_issue` | `team_key`, `title`, `description`, `labels`, `priority`, `estimate`, `parent_id`, `blocked_by`, `project_url` | Cria uma issue; retorna ID real (e.g. `TEA-42`) |
+| `get_project` | `team_key`, `project_url` | Verifica que o project existe; retorna UUID |
 
 `create_issue` delega para `claude -p` com o Linear MCP. `parent_id` e `blocked_by` devem ser IDs reais (nunca `tempId`).
 
@@ -82,6 +83,9 @@ Usar sempre `workflow_dir=linear_tasks_creation` e um dos ficheiros:
 | `ARVO_SRS_NOTION_PAGE_URL` | **Sim** | URL completa da página Dashboard SRS no Notion |
 | `ARVO_SRS_NOTION_PAGE_ID` | Legado | UUID (aceito; convertido para URL internamente) |
 | `ARVO_LINEAR_TEAM_KEY` | **Sim** | Key do time no Linear (e.g. `NEW`, `TEA`) |
+| `ARVO_LINEAR_PROJECT_URL` | Opcional | URL completa do project Linear (e.g. `https://linear.app/arvosaude/project/...`) |
+| `ARVO_LINEAR_PROJECT_ID` | Legado | UUID ou short id (aceito se URL não estiver definida) |
+| `ARVO_LINEAR_PROJECT_NAME` | Legado | Nome do project (aceito se URL não estiver definida) |
 | `ARVO_SRS_PROJECT_NAME` | Não | Nome do projeto (default `Arvo authorization`) |
 | `ARVO_LINEAR_DELEGATE_TIMEOUT_SEC` | Não | Timeout do subprocess `claude -p` para criação de issues (default `180`) |
 | `CLAUDE_CODE_PERMISSION_MODE` | Recomendado | `bypassPermissions` para que o subprocess não exija aprovação manual |
@@ -122,6 +126,7 @@ cd arvo_auth_orchestrator
 
 export ARVO_SRS_NOTION_PAGE_URL=https://www.notion.so/35f8c52e53d781c18e24c8b83e8c258e
 export ARVO_LINEAR_TEAM_KEY=NEW
+export ARVO_LINEAR_PROJECT_URL=https://linear.app/arvosaude/project/dashboard-de-gestao-dos-clientes-1bb8bb27c4d5
 export ARVO_SRS_PROJECT_NAME="Arvo authorization"
 export CLAUDE_CODE_PERMISSION_MODE=bypassPermissions
 

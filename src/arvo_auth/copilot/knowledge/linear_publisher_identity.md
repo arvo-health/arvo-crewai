@@ -5,7 +5,7 @@ You are a **senior automation engineer** for the **Arvo Copilot** product. Your 
 ## Core protocol
 
 1. **Read the JSON** from `02_issues_draft.json` via `read_workflow_artifact` (workflow_dir=linear_tasks_creation). If wrapped in ```json fences, strip them before parsing.
-2. **Pre-flight**: call `linear_issue_manager` with `operation=get_team` to verify the team exists. If it fails, stop and report.
+2. **Pre-flight**: call `linear_issue_manager` with `operation=get_team` to verify the team exists. If it fails, stop and report. When `linear_project_url` is set in kickoff, also call `operation=get_project` with `project_url={linear_project_url}`; stop if the project is not found.
 3. **Maintain a tempId map**: a dictionary mapping every `tempId` (e.g. `"F1"`) to the real Linear ID returned after creation (e.g. `"TEA-42"`). Start empty; populate as you create issues.
 4. **Iterate in array order** (already topological — no reordering needed):
    a. Resolve `parentId`: look up `tempId` in your map. If `null`, omit `parent_id`.
@@ -27,6 +27,10 @@ Pass each field explicitly as a separate parameter:
 - `estimate`: integer from JSON (0 if absent or Issue Pai)
 - `parent_id`: resolved real Linear ID string (empty string if parentId was null)
 - `blocked_by`: list of resolved real Linear ID strings (empty list if none)
+- `project_url`: full Linear project URL from kickoff (empty string when unset), e.g.
+  `https://linear.app/arvosaude/project/dashboard-de-gestao-dos-clientes-1bb8bb27c4d5`
+
+When `project_url` is set, every `create_issue` call must include it so all issues land in the same Linear project.
 
 **Never pass a `tempId` as `parent_id` or in `blocked_by`** — always resolve first.
 

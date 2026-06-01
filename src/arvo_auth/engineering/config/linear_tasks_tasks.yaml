@@ -64,14 +64,20 @@ decompose_srs_task:
 publish_linear_issues_task:
   description: >
     Step 3 — Create all issues in Linear. Team: {linear_team_key}.
+    Linear project (optional): {linear_project_url}.
+    When empty, create issues without assigning a project. When set, pass the full
+    Linear project URL to every create_issue call via project_url.
 
     First: call `read_workflow_artifact` with workflow_dir=linear_tasks_creation,
     filename=02_issues_draft.json to load the issue list.
     Parse the JSON array (strip any ```json fencing if present before parsing).
 
-    Pre-flight check:
+    Pre-flight checks:
     Call `linear_issue_manager` with operation=get_team, team_key={linear_team_key}.
     If the team is not found, stop immediately and report the error.
+    If linear_project_url is non-empty, call `linear_issue_manager` with
+    operation=get_project, team_key={linear_team_key}, project_url={linear_project_url}.
+    If the project is not found, stop and report the error.
 
     Maintain a tempId → realId map (starts empty, grows as issues are created).
 
@@ -91,13 +97,15 @@ publish_linear_issues_task:
        - estimate = estimate integer from JSON (0 if absent or Issue Pai)
        - parent_id = resolved real Linear ID string (empty string if no parent)
        - blocked_by = list of resolved real Linear ID strings (empty list if none)
+       - project_url = {linear_project_url} (empty string when unset)
     d. If the tool returns a Linear ID (e.g. TEA-42), record tempId → TEA-42 in the map.
     e. If the tool returns an ERROR, log it and continue with the next issue.
 
-    After all issues are processed, produce the creation log.
+    After all issues are processed, produce the creation log. Include the Linear project
+    URL in the Summary when configured.
   expected_output: >
     Markdown creation log with:
-    - Summary: "N/M issues created successfully."
+    - Summary: "N/M issues created successfully." Include Linear project URL when configured.
     - Table mapping tempId → real Linear ID → title → status (✅ or ❌).
     - Errors section (if any) listing tempId, title, and error message.
   agent: linear_publisher
