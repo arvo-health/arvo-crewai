@@ -23,8 +23,8 @@ uv run run_copilot_notion_publish
 | Variável | Descrição |
 | --- | --- |
 | `ARVO_COPILOT_SRS_PUBLISH_INPUT` | Path do SRS (fallback: `ARVO_SRS_PUBLISH_INPUT`; default: `outputs/copilot/srs_workflow/SRS.md`) |
-| `NOTION_COPILOT_SRS_PARENT_PAGE_ID` | UUID da página pai (fallback: `NOTION_SRS_PARENT_PAGE_ID`) |
 | `NOTION_COPILOT_SRS_PARENT_URL` | URL da página pai (fallback: `NOTION_SRS_PARENT_URL`) |
+| `NOTION_COPILOT_SRS_PARENT_PAGE_ID` | Legado: UUID (aceito, convertido para URL internamente) |
 | `ARVO_COPILOT_SRS_PROJECT_NAME`, `ARVO_COPILOT_SRS_PHASE` | Interpolação nos prompts (fallback `ARVO_SRS_*`) |
 
 ## Saídas

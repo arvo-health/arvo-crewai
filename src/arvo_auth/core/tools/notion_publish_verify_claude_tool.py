@@ -45,12 +45,11 @@ class NotionPublishVerifyViaClaudeTool(BaseTool):
             return err
         assert srs_path is not None
 
-        parent_id = cfg.resolve_notion_parent_id()
-        parent_url = cfg.resolve_notion_parent_url()
-        if not parent_id and not parent_url:
-            return (
-                f"Set {cfg.notion_parent_id_env} (Notion page UUID) or "
-                f"{cfg.notion_parent_url_env} for the completeness audit."
+        parent_ref, parent_err = cfg.resolve_notion_parent()
+        if parent_err or not parent_ref:
+            return parent_err or (
+                f"Set {cfg.notion_parent_url_env} (full Notion page URL) or legacy "
+                f"{cfg.notion_parent_id_env} for the completeness audit."
             )
 
         plan_file = publish_plan_path(cfg)
@@ -78,11 +77,7 @@ class NotionPublishVerifyViaClaudeTool(BaseTool):
         else:
             log_excerpt = "(publish_execution_log.md not found — run publish step first.)"
 
-        parent_hint = (
-            f"Root parent page UUID: {parent_id}"
-            if parent_id
-            else f"Root parent page URL: {parent_url}"
-        )
+        parent_hint = parent_ref.prompt_hint()
 
         timeout = int(os.getenv("NOTION_PUBLISH_VERIFY_CLAUDE_TIMEOUT_SEC", "3600"))
 

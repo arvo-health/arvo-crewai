@@ -10,16 +10,22 @@ from arvo_auth.core.srs_inputs import _env_value
 
 def build_linear_tasks_kickoff_inputs(config: LinearTasksTeamConfig) -> dict:
     """Build kickoff inputs for a Linear tasks creation crew."""
-    page_id = config.resolve_srs_notion_page_id()
-    if not page_id:
+    page_ref, page_err = config.resolve_srs_notion_page()
+    if page_err or not page_ref:
+        url_envs = list(config._srs_url_env_names())
+        if config.srs_notion_page_id_fallback_env:
+            url_envs.append(config.srs_notion_page_id_fallback_env)
         raise ValueError(
-            f"Missing SRS Notion page ID. Set {config.srs_notion_page_id_env}"
-            + (
-                f" (or fallback {config.srs_notion_page_id_fallback_env})"
-                if config.srs_notion_page_id_fallback_env
-                else ""
+            page_err
+            or (
+                f"Missing SRS Notion page URL. Set {config.srs_notion_page_url_env}"
+                + (
+                    f" (fallback: {config.srs_notion_page_url_fallback_env})"
+                    if config.srs_notion_page_url_fallback_env
+                    else ""
+                )
+                + " to the full Notion URL of the SRS Dashboard page."
             )
-            + " to the UUID of the SRS Notion dashboard or root page."
         )
 
     team_key = config.resolve_linear_team_key()
@@ -41,7 +47,7 @@ def build_linear_tasks_kickoff_inputs(config: LinearTasksTeamConfig) -> dict:
     return {
         "project_name": project_name,
         "phase_name": phase_name,
-        "srs_notion_page_id": page_id,
+        "srs_notion_page_url": page_ref.url,
         "linear_team_key": team_key,
         "current_year": str(datetime.now().year),
     }

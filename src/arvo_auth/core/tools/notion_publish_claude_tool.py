@@ -46,12 +46,11 @@ class NotionPublishViaClaudeTool(BaseTool):
             return err
         assert srs_path is not None
 
-        parent_id = cfg.resolve_notion_parent_id()
-        parent_url = cfg.resolve_notion_parent_url()
-        if not parent_id and not parent_url:
-            return (
-                f"Set {cfg.notion_parent_id_env} (Notion page UUID) or "
-                f"{cfg.notion_parent_url_env} so Claude knows where to attach new pages."
+        parent_ref, parent_err = cfg.resolve_notion_parent()
+        if parent_err or not parent_ref:
+            return parent_err or (
+                f"Set {cfg.notion_parent_url_env} (full Notion page URL) or legacy "
+                f"{cfg.notion_parent_id_env} so Claude knows where to attach new pages."
             )
 
         plan_text = publish_plan_markdown.strip()
@@ -67,9 +66,7 @@ class NotionPublishViaClaudeTool(BaseTool):
                     "RF-/RNF-/REQ- identifiers.)"
                 )
 
-        parent_hint = (
-            f"Parent page UUID: {parent_id}" if parent_id else f"Parent page URL: {parent_url}"
-        )
+        parent_hint = parent_ref.prompt_hint()
 
         timeout = int(os.getenv("NOTION_PUBLISH_CLAUDE_TIMEOUT_SEC", "1800"))
 

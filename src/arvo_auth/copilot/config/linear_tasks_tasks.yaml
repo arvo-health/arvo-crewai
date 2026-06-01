@@ -1,11 +1,11 @@
 read_srs_task:
   description: >
-    Project: {project_name}. SRS Notion page ID: {srs_notion_page_id}. Year: {current_year}.
+    Project: {project_name}. SRS Notion page URL: {srs_notion_page_url}. Year: {current_year}.
 
     Step 1 — Fetch the full SRS from Notion:
-    Call `fetch_notion_page_text` with page_id={srs_notion_page_id}.
+    Call `fetch_notion_page_text` with page_url={srs_notion_page_url}.
     If the content references linked child pages that contain requirements, call the tool
-    again for each relevant child page ID and append the content.
+    again for each relevant child page URL and append the content.
 
     Step 2 — Produce the structured output:
     Write a markdown document with:

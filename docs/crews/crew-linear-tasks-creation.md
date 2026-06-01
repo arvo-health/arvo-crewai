@@ -24,7 +24,7 @@ Cada sub-issue tem: estimate Fibonacci (máx. 5), `blockedBy` declarados, contra
 
 Dois agentes executam **três passos**:
 
-1. **Leitura do SRS** (`srs_issue_architect`) — `fetch_notion_page_text` com `page_id` configurado. Preserva identificadores de requisito (RF-, RNF-, REQ-). Saída: `outputs/engineering/linear_tasks_creation/01_srs_content.md`.
+1. **Leitura do SRS** (`srs_issue_architect`) — `fetch_notion_page_text` com a URL da página configurada. Preserva identificadores de requisito (RF-, RNF-, REQ-). Saída: `outputs/engineering/linear_tasks_creation/01_srs_content.md`.
 
 2. **Decomposição** (`srs_issue_architect`) — por módulo do SRS, cria Issue Pai + sub-issues com descrições completas segundo os templates do identity, estima em Fibonacci (≤5, quebra se maior), mapeia `blockedBy`, valida cobertura total de requisitos, ordena topologicamente. Saída: `outputs/engineering/linear_tasks_creation/02_issues_draft.json` (JSON puro, sem fencing).
 
@@ -79,7 +79,8 @@ Usar sempre `workflow_dir=linear_tasks_creation` e um dos ficheiros:
 
 | Variável | Obrigatório | Descrição |
 | --- | --- | --- |
-| `ARVO_SRS_NOTION_PAGE_ID` | **Sim** | UUID Notion do SRS (32 hex chars, com ou sem traços) |
+| `ARVO_SRS_NOTION_PAGE_URL` | **Sim** | URL completa da página Dashboard SRS no Notion |
+| `ARVO_SRS_NOTION_PAGE_ID` | Legado | UUID (aceito; convertido para URL internamente) |
 | `ARVO_LINEAR_TEAM_KEY` | **Sim** | Key do time no Linear (e.g. `NEW`, `TEA`) |
 | `ARVO_SRS_PROJECT_NAME` | Não | Nome do projeto (default `Arvo authorization`) |
 | `ARVO_LINEAR_DELEGATE_TIMEOUT_SEC` | Não | Timeout do subprocess `claude -p` para criação de issues (default `180`) |
@@ -119,7 +120,7 @@ Usar sempre `workflow_dir=linear_tasks_creation` e um dos ficheiros:
 ```bash
 cd arvo_auth_orchestrator
 
-export ARVO_SRS_NOTION_PAGE_ID=35f8c52e53d781c18e24c8b83e8c258e
+export ARVO_SRS_NOTION_PAGE_URL=https://www.notion.so/35f8c52e53d781c18e24c8b83e8c258e
 export ARVO_LINEAR_TEAM_KEY=NEW
 export ARVO_SRS_PROJECT_NAME="Arvo authorization"
 export CLAUDE_CODE_PERMISSION_MODE=bypassPermissions
@@ -135,7 +136,7 @@ Após a corrida, verificar `outputs/engineering/linear_tasks_creation/03_publish
 flowchart TB
     subgraph inputs[Entradas]
         NOTION[Notion: SRS page]
-        ENV[ARVO_SRS_NOTION_PAGE_ID / ARVO_LINEAR_TEAM_KEY]
+        ENV[ARVO_SRS_NOTION_PAGE_URL / ARVO_LINEAR_TEAM_KEY]
     end
 
     subgraph step1[Passo 1 — Leitura do SRS]
@@ -210,7 +211,7 @@ Array JSON topologicamente ordenado. Exemplo:
 
 ### Notion retorna "(empty page)" ou conteúdo truncado
 
-- Confirma que `ARVO_SRS_NOTION_PAGE_ID` é o UUID correto (32 hex chars).
+- Confirma que `ARVO_SRS_NOTION_PAGE_URL` é a URL correta da página Dashboard (copie do log de `run_notion_publish`).
 - Verifica acesso: `NOTION_API_KEY` com permissão de leitura, ou Notion MCP autenticado.
 - Se o SRS usa sub-páginas, o agente deve chamá-las também; verifica `01_srs_content.md`.
 

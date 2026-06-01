@@ -46,8 +46,8 @@ O SRS deve existir e ser o resultado desejado para publicação (tipicamente ap�
 
 | Variável | Obrigatório | Descrição |
 | --- | --- | --- |
-| `NOTION_SRS_PARENT_PAGE_ID` | Um dos dois | UUID da página pai no Notion |
-| `NOTION_SRS_PARENT_URL` | Um dos dois | URL completa da página pai (alternativa ao UUID sozinho) |
+| `NOTION_SRS_PARENT_URL` | Sim | URL completa da página pai no Notion |
+| `NOTION_SRS_PARENT_PAGE_ID` | Legado | UUID (aceito; convertido para URL internamente) |
 | `NOTION_PUBLISH_CLAUDE_TIMEOUT_SEC` | Opcional | Timeout do subprocesso do passo B (default 1800 s) |
 | `NOTION_PUBLISH_VERIFY_CLAUDE_TIMEOUT_SEC` | Opcional | Timeout do subprocesso do passo C — auditoria / patches (default 3600 s) |
 | `ARVO_CLAUDE_CODE_CWD`, `CLAUDE_CODE_BIN`, `CLAUDE_CODE_PERMISSION_MODE`, `CLAUDE_CODE_EXTRA_ARGS` | Opcional | Alinhados à delegação `claude -p` |

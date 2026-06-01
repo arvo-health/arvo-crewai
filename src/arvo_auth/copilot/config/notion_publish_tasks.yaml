@@ -6,8 +6,8 @@ analyze_srs_notion_structure_task:
     block or, if missing, infer from top-level `#` / `##` headings in order). Parse requirement
     taxonomies (RF/RNF/REQ), cross-references, URLs in citations, trade-offs, risks, and
     traceability tables. Design a concrete Notion tree: **one child page per TOC section** under
-    the Dashboard (which sits under the workspace root from NOTION_SRS_PARENT_PAGE_ID or
-    NOTION_SRS_PARENT_URL), preserving section numbers in page titles, parent relationships, and
+    the Dashboard (which sits under the workspace root from NOTION_SRS_PARENT_URL or legacy
+    NOTION_SRS_PARENT_PAGE_ID), preserving section numbers in page titles, parent relationships, and
     one-paragraph intent per page. Do not invoke Notion tools yet — only plan for the next step
     which runs Claude Code with MCP.
 
@@ -28,7 +28,8 @@ execute_notion_publish_task:
     outputs/copilot/notion_export/publish_plan.md from disk (written by step A). Alternatively
     paste the full plan body into publish_plan_markdown. The tool reads the SRS file
     from disk and delegates to the local Claude Code CLI with your Notion MCP to create
-    all pages under NOTION_SRS_PARENT_PAGE_ID or NOTION_SRS_PARENT_URL. Do not use REST
+    all pages under NOTION_COPILOT_SRS_PARENT_URL (fallback: NOTION_SRS_PARENT_URL; legacy UUID
+    vars still accepted). Do not use REST
     API tools. The subprocess instructions require **lossless** copy: every SRS paragraph,
     list, table, and code fence for each section must appear in full on the matching Notion
     page (no summarization). If the tool returns an error, summarize it in the execution log.
