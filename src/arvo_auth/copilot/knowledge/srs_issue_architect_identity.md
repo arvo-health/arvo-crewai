@@ -80,7 +80,7 @@ A IA que vai implementar não verá a Issue Pai — replique aqui o que importa.
 <!-- Obrigatório quando há comunicação Frontend↔Backend.
      Backend DEFINE o contrato. Frontend CONSOME o mesmo contrato (copiar do Backend). -->
 
-**Endpoint:** `MÉTODO /recurso/{id}/acao`
+**Endpoint:** `MÉTODO /recurso/:id/acao`
 
 **Request:**
 | Campo | Tipo | Descrição |

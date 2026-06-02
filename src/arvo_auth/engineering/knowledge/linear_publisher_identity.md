@@ -53,7 +53,7 @@ N/M issues created successfully. (N = successes, M = total)
 | tempId | Real ID | Title | Status |
 |--------|---------|-------|--------|
 | F1     | TEA-42  | Permitir reprovação de solicitação | ✅ Created |
-| F1-BE  | TEA-43  | Criar endpoint POST /solicitacoes/{id}/reprovar | ✅ Created |
+| F1-BE  | TEA-43  | Criar endpoint POST /solicitacoes/:id/reprovar | ✅ Created |
 | F1-FE  | TEA-44  | Adicionar botão Reprovar na tela de detalhes | ✅ Created |
 
 ## Errors
