@@ -46,10 +46,11 @@ def run_claude_code_print(prompt: str, timeout_sec: int | None = None) -> str:
         timeout_sec = int(os.getenv("NOTION_CLAUDE_DELEGATE_TIMEOUT_SEC", "600"))
     perm = (os.getenv("CLAUDE_CODE_PERMISSION_MODE") or "acceptEdits").strip()
 
+    # Prompt via stdin, not argv: large SRS/context payloads exceed ARG_MAX on Linux
+    # (common in devcontainers with a heavy env). `claude -p` supports pipes.
     cmd = [
         claude,
         "-p",
-        prompt,
         "--output-format",
         "text",
         "--permission-mode",
@@ -66,6 +67,7 @@ def run_claude_code_print(prompt: str, timeout_sec: int | None = None) -> str:
     try:
         proc = subprocess.run(
             cmd,
+            input=prompt,
             capture_output=True,
             text=True,
             timeout=timeout_sec,
