@@ -3,30 +3,28 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 from typing import Type
 
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
+from arvo_auth.core.srs_notion_publish_config import (
+    ENGINEERING_NOTION_PUBLISH,
+    SrsNotionPublishTeamConfig,
+)
+from arvo_auth.core.srs_publish_paths import publish_plan_path, resolve_srs_publish_path
 from arvo_auth.core.tools.notion_claude_delegate import run_claude_code_print
-from arvo_auth.core.tools.srs_publish_read_tool import _resolve_srs_path
-
-
-def _project_root() -> Path:
-    return Path(__file__).resolve().parents[4]
-
-
-def _publish_plan_path() -> Path:
-    return _project_root() / "outputs" / "engineering" / "notion_export" / "publish_plan.md"
 
 
 class NotionPublishViaClaudeInput(BaseModel):
-    """Optional pasted publish plan; if empty, reads outputs/notion_export/publish_plan.md from disk."""
+    """Optional pasted publish plan; if empty, reads publish_plan.md from disk."""
 
     publish_plan_markdown: str = Field(
         default="",
-        description="Paste the publish plan from the previous task, or leave empty to read publish_plan.md from disk.",
+        description=(
+            "Paste the publish plan from the previous task, or leave empty to read "
+            "publish_plan.md from the team's notion_export folder on disk."
+        ),
     )
 
 
@@ -34,31 +32,30 @@ class NotionPublishViaClaudeTool(BaseTool):
     name: str = "notion_publish_srs_via_claude"
     description: str = (
         "Create the full Notion hierarchy for the SRS using the local Claude Code CLI and "
-        "your Notion MCP (no NOTION_API_KEY). Run once after planning. Requires "
-        "NOTION_SRS_PARENT_PAGE_ID (UUID) or NOTION_SRS_PARENT_URL. Reads SRS from disk "
-        "(ARVO_SRS_PUBLISH_INPUT or default). Structure: Dashboard + one child page per SRS "
-        "TOC section, preserve numbering and citation URLs. Use read_srs_for_notion_publish first if you "
-        "need to verify content; this tool re-reads the file path internally."
+        "your Notion MCP (no NOTION_API_KEY). Run once after planning. Requires a Notion "
+        "parent page id or URL env var. Reads SRS from disk (team publish input env or "
+        "default). Structure: Dashboard + one child page per SRS TOC section."
     )
     args_schema: Type[BaseModel] = NotionPublishViaClaudeInput
+    publish_config: SrsNotionPublishTeamConfig = ENGINEERING_NOTION_PUBLISH
 
     def _run(self, publish_plan_markdown: str = "") -> str:
-        srs_path, err = _resolve_srs_path()
+        cfg = self.publish_config
+        srs_path, err = resolve_srs_publish_path(cfg)
         if err:
             return err
         assert srs_path is not None
 
-        parent_id = os.getenv("NOTION_SRS_PARENT_PAGE_ID", "").strip()
-        parent_url = os.getenv("NOTION_SRS_PARENT_URL", "").strip()
-        if not parent_id and not parent_url:
-            return (
-                "Set NOTION_SRS_PARENT_PAGE_ID (Notion page UUID) or NOTION_SRS_PARENT_URL "
-                "so Claude knows where to attach new pages."
+        parent_ref, parent_err = cfg.resolve_notion_parent()
+        if parent_err or not parent_ref:
+            return parent_err or (
+                f"Set {cfg.notion_parent_url_env} (full Notion page URL) or legacy "
+                f"{cfg.notion_parent_id_env} so Claude knows where to attach new pages."
             )
 
         plan_text = publish_plan_markdown.strip()
         if not plan_text:
-            plan_file = _publish_plan_path()
+            plan_file = publish_plan_path(cfg)
             if plan_file.is_file():
                 plan_text = plan_file.read_text(encoding="utf-8", errors="replace")
             else:
@@ -69,9 +66,7 @@ class NotionPublishViaClaudeTool(BaseTool):
                     "RF-/RNF-/REQ- identifiers.)"
                 )
 
-        parent_hint = (
-            f"Parent page UUID: {parent_id}" if parent_id else f"Parent page URL: {parent_url}"
-        )
+        parent_hint = parent_ref.prompt_hint()
 
         timeout = int(os.getenv("NOTION_PUBLISH_CLAUDE_TIMEOUT_SEC", "1800"))
 

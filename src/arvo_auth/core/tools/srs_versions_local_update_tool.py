@@ -9,7 +9,7 @@ from typing import Type
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
-from arvo_auth.core.tools.srs_publish_read_tool import _resolve_srs_path
+from arvo_auth.core.srs_publish_paths import resolve_srs_publish_path_legacy as _resolve_srs_path
 
 
 # Candidate section titles (case-insensitive). Tolerates optional numbering prefixes

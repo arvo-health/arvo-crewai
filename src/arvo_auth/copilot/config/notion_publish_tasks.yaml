@@ -25,11 +25,11 @@ execute_notion_publish_task:
   description: >
     Step B — Execute the plan using the tool notion_publish_srs_via_claude exactly ONCE.
     You may pass publish_plan_markdown as empty string: the tool reads
-    outputs/notion_export/publish_plan.md from disk (written by step A). Alternatively
+    outputs/copilot/notion_export/publish_plan.md from disk (written by step A). Alternatively
     paste the full plan body into publish_plan_markdown. The tool reads the SRS file
     from disk and delegates to the local Claude Code CLI with your Notion MCP to create
-    all pages under NOTION_SRS_PARENT_URL (legacy NOTION_SRS_PARENT_PAGE_ID still accepted).
-    Do not use REST
+    all pages under NOTION_COPILOT_SRS_PARENT_URL (fallback: NOTION_SRS_PARENT_URL; legacy UUID
+    vars still accepted). Do not use REST
     API tools. The subprocess instructions require **lossless** copy: every SRS paragraph,
     list, table, and code fence for each section must appear in full on the matching Notion
     page (no summarization). If the tool returns an error, summarize it in the execution log.

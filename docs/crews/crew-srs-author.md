@@ -173,6 +173,14 @@ Se `SRS.md` contiver texto sobre **Write permission denied** ou **don’t ask mo
 1. No `.env`, usa **`CLAUDE_CODE_PERMISSION_MODE=acceptEdits`** (ou `default` se preferires só leitura e o modelo **não** tentar Write — o ideal é o autor devolver só o markdown na resposta; ver `srs_author_identity.md`). Para ambientes isolados (VM), a documentação do Claude Code menciona modos mais permissivos; evita `dontAsk` para este crew se precisares de escrita via CLI.
 2. O default no código (`notion_claude_delegate.run_claude_code_print`) passou a **`acceptEdits`** quando a variável não está definida — mas se o teu `.env` ainda fixa `dontAsk`, remove ou altera essa linha.
 
+### `Argument list too long` ao invocar Claude Code (devcontainer / Linux)
+
+**Sintoma:** `ERROR: Failed to run Claude Code: [Errno 7] Argument list too long: '/home/vscode/.local/bin/claude'`.
+
+**Causa:** versões antigas passavam o prompt inteiro (contexto do SRS, histórico ReAct, etc.) como argumento de linha de comando. No Linux o tamanho total de `argv` + `environ` é limitado (`ARG_MAX`); devcontainers com muitas variáveis de ambiente agravam o problema.
+
+**Correção:** `run_claude_code_print` envia o prompt por **stdin** (`claude -p` com pipe), não em `argv`. Atualiza o repositório e volta a correr o flow. Se ainda falhar, confirma que `claude --help` menciona `-p` com suporte a pipes e que `CLAUDE_CODE_BIN` aponta para o binário correto.
+
 ## Resolução de problemas
 
 ### Artefactos em `outputs/srs_workflow/` parecem cortados (só o fim do ficheiro)

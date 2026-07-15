@@ -9,10 +9,8 @@ import httpx
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
-from arvo_auth.core.tools.notion_claude_delegate import (
-    fetch_notion_page_via_claude_code,
-    normalize_notion_page_id,
-)
+from arvo_auth.core.notion_page_ref import NotionPageRef
+from arvo_auth.core.tools.notion_claude_delegate import fetch_notion_page_via_claude_code_url
 
 NOTION_VERSION = "2022-06-28"
 _MAX_BLOCKS = 400
@@ -55,9 +53,12 @@ def _block_to_line(block: dict[str, Any]) -> str | None:
 
 
 class NotionPageReadInput(BaseModel):
-    page_id: str = Field(
+    page_url: str = Field(
         ...,
-        description="Notion page UUID (with or without dashes) from the docs database.",
+        description=(
+            "Full Notion page URL (preferred), e.g. https://www.notion.so/.... "
+            "A 32-character UUID is still accepted for backward compatibility."
+        ),
     )
 
 
@@ -71,11 +72,10 @@ class NotionPageReadTool(BaseTool):
     )
     args_schema: Type[BaseModel] = NotionPageReadInput
 
-    def _run(self, page_id: str) -> str:
-        fmt_id, err = normalize_notion_page_id(page_id)
-        if err:
-            return err
-        assert fmt_id is not None
+    def _run(self, page_url: str) -> str:
+        ref, err = NotionPageRef.from_url_or_id(page_url)
+        if err or not ref:
+            return err or "Invalid Notion page reference."
 
         token = os.getenv("NOTION_API_KEY", "").strip()
         via = os.getenv("NOTION_VIA_CLAUDE_CODE", "").strip().lower()
@@ -90,7 +90,18 @@ class NotionPageReadTool(BaseTool):
             )
 
         if not token or force_claude:
-            return fetch_notion_page_via_claude_code(fmt_id)
+            return fetch_notion_page_via_claude_code_url(ref.url)
+
+        fmt_id = ref.page_id
+        if not fmt_id:
+            from arvo_auth.core.notion_page_ref import extract_page_id_from_notion_url
+
+            fmt_id, id_err = extract_page_id_from_notion_url(ref.url)
+            if id_err or not fmt_id:
+                return (
+                    id_err
+                    or "Could not resolve Notion page UUID from URL for REST API access."
+                )
 
         headers = {
             "Authorization": f"Bearer {token}",

@@ -1,4 +1,4 @@
-"""Re-read intermediate workflow markdown from outputs/<workflow_dir>/."""
+"""Re-read intermediate workflow markdown from outputs/<team>/<workflow_dir>/."""
 
 from __future__ import annotations
 
@@ -30,12 +30,19 @@ _ALLOWED_BY_DIR: dict[str, frozenset[str]] = {
             "branch_mapping.md",
         }
     ),
+    "linear_tasks_creation": frozenset(
+        {
+            "01_srs_content.md",
+            "02_issues_draft.json",
+            "03_publish_log.md",
+        }
+    ),
 }
 _MAX_BYTES = 600_000
 
 
-def _outputs_root() -> Path:
-    return Path(__file__).resolve().parents[4] / "outputs" / "engineering"
+def _project_outputs_root() -> Path:
+    return Path(__file__).resolve().parents[4] / "outputs"
 
 
 class WorkflowOutputReadInput(BaseModel):
@@ -46,7 +53,8 @@ class WorkflowOutputReadInput(BaseModel):
     workflow_dir: str = Field(
         default="srs_workflow",
         description=(
-            "Subfolder under outputs/engineering/: srs_workflow (default) or frontend_branch_mapping."
+            "Subfolder under outputs/<team>/: srs_workflow (default), "
+            "frontend_branch_mapping, or linear_tasks_creation."
         ),
     )
 
@@ -54,11 +62,16 @@ class WorkflowOutputReadInput(BaseModel):
 class WorkflowOutputReadTool(BaseTool):
     name: str = "read_workflow_artifact"
     description: str = (
-        "Load a markdown artifact from outputs/engineering/. Use workflow_dir=srs_workflow for SRS "
-        "steps, or workflow_dir=frontend_branch_mapping for 01_github_delta.md, "
-        "02_code_analysis.md, and branch_mapping.md."
+        "Load a markdown artifact from outputs/<team>/. Use workflow_dir=srs_workflow "
+        "for SRS steps, workflow_dir=frontend_branch_mapping for branch mapping artefacts, "
+        "or workflow_dir=linear_tasks_creation for 01_srs_content.md, "
+        "02_issues_draft.json, and 03_publish_log.md."
     )
     args_schema: Type[BaseModel] = WorkflowOutputReadInput
+    outputs_team: str = "engineering"
+
+    def _outputs_root(self) -> Path:
+        return _project_outputs_root() / self.outputs_team
 
     def _run(self, filename: str, workflow_dir: str = "srs_workflow") -> str:
         subdir = workflow_dir.strip() or "srs_workflow"
@@ -71,7 +84,7 @@ class WorkflowOutputReadTool(BaseTool):
         if name not in allowed:
             return f"Unknown artifact for {subdir}. Allowed: {', '.join(sorted(allowed))}"
 
-        path = _outputs_root() / subdir / name
+        path = self._outputs_root() / subdir / name
         if not path.is_file():
             return f"File not found yet: {path}. Run earlier workflow steps first."
 

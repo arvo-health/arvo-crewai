@@ -128,6 +128,10 @@ graph TD
     ENGC["engineering/config/"]
     ENGK["engineering/knowledge/"]
     ENGO["outputs/engineering/"]
+    COP["copilot/\n(assistentes IDE)"]
+    COPC["copilot/config/"]
+    COPK["copilot/knowledge/"]
+    COPO["outputs/copilot/"]
     NEW["&lt;seu_time&gt;/\n(novo time)"]
     NEWC["&lt;seu_time&gt;/config/"]
     NEWK["&lt;seu_time&gt;/knowledge/"]
@@ -139,6 +143,10 @@ graph TD
     ENG --> ENGC
     ENG --> ENGK
     ENG -.->|"escreve em"| ENGO
+    PKG --> COP
+    COP --> COPC
+    COP --> COPK
+    COP -.->|"escreve em"| COPO
     PKG --> NEW
     NEW --> NEWC
     NEW --> NEWK
@@ -219,6 +227,7 @@ from arvo_auth.core.llm_defaults import default_llm
 | `uv run run_srs` | `SrsAuthorCrew` | Visão de produto → artefatos → `SRS.md` | [crew-srs-author.md](docs/crews/crew-srs-author.md) |
 | `uv run run_srs_replay` | `SrsAuthorCrew` | Replay a partir de tarefa gravada (p.ex. só o passo 7) | [crew-srs-author.md](docs/crews/crew-srs-author.md) |
 | `uv run run_notion_publish` | `SrsNotionPublishCrew` | `SRS.md` → hierarquia no Notion (CLI `claude` + MCP) | [crew-srs-notion-publish.md](docs/crews/crew-srs-notion-publish.md) |
+| `uv run run_linear_tasks` | `LinearTasksCreationCrew` | Página SRS no Notion → árvore de issues Linear (CLI `claude` + MCP Linear) | [crew-linear-tasks-creation.md](docs/crews/crew-linear-tasks-creation.md) |
 | `uv run run_notion_gap_comments` | `NotionGapCommentCrew` | Lacunas/conflitos → pesquisa + comentários inline no Notion | [crew-notion-gap-comments.md](docs/crews/crew-notion-gap-comments.md) |
 | `uv run run_srs_meeting_update` | `SrsMeetingChangesPlanCrew` | Transcrição + varredura de comentários Notion → `notion_changes_diff.md` | [crew-srs-meeting-update.md](docs/crews/crew-srs-meeting-update.md) |
 | `uv run run_srs_meeting_update_apply` | `SrsMeetingChangesApplyCrew` | Aplicar diff via MCP + atualizar Versões no SRS e no Notion | [crew-srs-meeting-update.md](docs/crews/crew-srs-meeting-update.md) |
@@ -232,6 +241,15 @@ from arvo_auth.core.llm_defaults import default_llm
 | `uv run run_ds_experiment_spec` | `ExperimentSpecCrew` | PDF de descoberta + repos Arvo → `experiment_spec.md` | [crew-ds-experiment-spec.md](docs/crews/crew-ds-experiment-spec.md) |
 | _(planejado)_ `uv run run_ds_solution_architecture` | `SolutionArchitectureCrew` | `experiment_spec.md` validado → `solution_architecture.md` (desenho de produção) | [crew-ds-solution-architecture.md](docs/crews/crew-ds-solution-architecture.md) |
 | _(planejado)_ `uv run run_ds_linear_sync` | `LinearSyncCrew` | Qualquer spec em markdown → issues granulares no Linear via MCP | [crew-ds-linear-sync.md](docs/crews/crew-ds-linear-sync.md) |
+
+### Time copilot
+
+| Comando | Crew | Finalidade | Docs |
+| --- | --- | --- | --- |
+| `uv run run_copilot_srs` | `CopilotSrsAuthorCrew` | Overview → artefatos → `SRS.md` autossuficiente (seções 1–7; sem citações aos `.md` do workflow) | [crew-copilot-srs-author.md](docs/crews/crew-copilot-srs-author.md) |
+| `uv run run_copilot_srs_replay` | `CopilotSrsAuthorCrew` | Replay a partir de tarefa gravada | [crew-copilot-srs-author.md](docs/crews/crew-copilot-srs-author.md) |
+| `uv run run_copilot_notion_publish` | `CopilotSrsNotionPublishCrew` | `SRS.md` copilot → Notion (CLI `claude` + MCP) | [crew-copilot-srs-notion-publish.md](docs/crews/crew-copilot-srs-notion-publish.md) |
+| `uv run run_copilot_linear_tasks` | `CopilotLinearTasksCreationCrew` | SRS Notion copilot → issues Linear (CLI `claude` + MCP Linear) | [crew-copilot-linear-tasks.md](docs/crews/crew-copilot-linear-tasks.md) |
 
 Documentação detalhada por crew (agentes, artefatos, variáveis, fluxos Mermaid): [docs/README.md](docs/README.md).
 
@@ -250,6 +268,14 @@ crewai run
 ```bash
 uv run run_srs
 uv run run_notion_publish
+```
+
+### Time copilot (SRS → Notion → Linear)
+
+```bash
+uv run run_copilot_srs              # outputs/copilot/srs_workflow/SRS.md (autossuficiente)
+uv run run_copilot_notion_publish
+uv run run_copilot_linear_tasks
 ```
 
 ### Atualização SRS por reunião
@@ -274,6 +300,7 @@ arvo_auth_orchestrator/
 │       ├── notion_export/
 │       ├── notion_gap_comments/
 │       └── srs_meeting_update/
+│   └── copilot/                          # (criado em runtime pelos crews do time)
 ├── src/arvo_auth/
 │   ├── main.py                           # Entry points CLI
 │   ├── core/                             # Infraestrutura compartilhada
@@ -281,15 +308,21 @@ arvo_auth_orchestrator/
 │   │   ├── claude_code_llm.py            # CrewAI BaseLLM → `claude -p`
 │   │   ├── crewai_react_parse_fix.py     # Correção do parser ReAct
 │   │   └── tools/                        # Todas as tools compartilhadas
-│   └── engineering/                      # Flows do time de engenharia
-│       ├── config/                       # agents.yaml + tasks.yaml por crew
-│       ├── knowledge/                    # Arquivos de identidade e regras dos agentes
-│       ├── crew.py                       # ArvoAuthOrchestrator (SDLC)
-│       ├── srs_crew.py                   # SrsAuthorCrew
-│       ├── notion_publish_crew.py        # SrsNotionPublishCrew
-│       ├── notion_gap_comment_crew.py    # NotionGapCommentCrew
-│       ├── srs_meeting_update_crew.py    # SrsMeetingChangesPlanCrew + ApplyCrew
-│       └── srs_notion_diff_apply_crew.py # SrsNotionDiffApplyCrew
+│   ├── engineering/                      # Flows do time de engenharia
+│   │   ├── config/                       # agents.yaml + tasks.yaml por crew
+│   │   ├── knowledge/                    # Arquivos de identidade e regras dos agentes
+│   │   ├── crew.py                       # ArvoAuthOrchestrator (SDLC)
+│   │   ├── srs_crew.py                   # SrsAuthorCrew
+│   │   ├── notion_publish_crew.py        # SrsNotionPublishCrew
+│   │   ├── notion_gap_comment_crew.py    # NotionGapCommentCrew
+│   │   ├── srs_meeting_update_crew.py    # SrsMeetingChangesPlanCrew + ApplyCrew
+│   │   └── srs_notion_diff_apply_crew.py # SrsNotionDiffApplyCrew
+│   ├── data_science/                     # Flows do time de data science
+│   │   ├── config/
+│   │   └── knowledge/
+│   └── copilot/                          # Flows do time copilot (assistentes IDE)
+│       ├── config/
+│       └── knowledge/
 ├── docs/                                 # Documentação
 │   └── crews/
 ├── .env.example

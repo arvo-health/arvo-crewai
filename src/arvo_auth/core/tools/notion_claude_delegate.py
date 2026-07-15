@@ -46,10 +46,11 @@ def run_claude_code_print(prompt: str, timeout_sec: int | None = None) -> str:
         timeout_sec = int(os.getenv("NOTION_CLAUDE_DELEGATE_TIMEOUT_SEC", "600"))
     perm = (os.getenv("CLAUDE_CODE_PERMISSION_MODE") or "acceptEdits").strip()
 
+    # Prompt via stdin, not argv: large SRS/context payloads exceed ARG_MAX on Linux
+    # (common in devcontainers with a heavy env). `claude -p` supports pipes.
     cmd = [
         claude,
         "-p",
-        prompt,
         "--output-format",
         "text",
         "--permission-mode",
@@ -66,6 +67,7 @@ def run_claude_code_print(prompt: str, timeout_sec: int | None = None) -> str:
     try:
         proc = subprocess.run(
             cmd,
+            input=prompt,
             capture_output=True,
             text=True,
             timeout=timeout_sec,
@@ -91,12 +93,19 @@ def run_claude_code_print(prompt: str, timeout_sec: int | None = None) -> str:
 
 def fetch_notion_page_via_claude_code(formatted_page_id: str) -> str:
     """
-    Run Claude Code in print mode. Notion access uses the user's MCP configuration
-    (same as interactive Claude Code), not NOTION_API_KEY.
+    Run Claude Code in print mode using a URL derived from the page UUID (legacy callers).
+    Prefer fetch_notion_page_via_claude_code_url when a URL is already available.
     """
+    compact = formatted_page_id.replace("-", "").strip().lower()
+    url = f"https://www.notion.so/{compact}"
+    return fetch_notion_page_via_claude_code_url(url)
+
+
+def fetch_notion_page_via_claude_code_url(page_url: str) -> str:
+    """Retrieve Notion page content via MCP using the page URL (preferred)."""
     prompt = (
         "You have access to Notion through MCP (as in your normal Claude Code setup).\n"
-        f"Retrieve the full readable content of the Notion page with id: {formatted_page_id}\n\n"
+        f"Retrieve the full readable content of the Notion page at URL: {page_url.strip()}\n\n"
         "Output rules:\n"
         "- Return ONLY the page body as markdown (headings, lists, tables as markdown).\n"
         "- Preserve requirement identifiers exactly (RF-, RNF-, REQ-, etc.).\n"
